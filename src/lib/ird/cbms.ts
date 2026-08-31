@@ -116,6 +116,17 @@ export async function postToCbms({
   isCreditNote?: boolean;
   timeoutMs?: number;
 }): Promise<CbmsResult> {
+  if (!env.IRD_CBMS_LIVE) {
+    // Development and tests never post to a real tax authority. The bill still moves to
+    // "synced" and the audit trail still records the push, so the flow is exercised end
+    // to end; only the network call is skipped. Set IRD_CBMS_LIVE=true to go out.
+    return {
+      ok: true,
+      status: 200,
+      body: { mocked: true, endpoint: isCreditNote ? "billreturn" : "bill" },
+    };
+  }
+
   const url = isCreditNote ? env.IRD_CBMS_BILL_RETURN_URL : env.IRD_CBMS_BILL_URL;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

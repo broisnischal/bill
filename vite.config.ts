@@ -128,6 +128,11 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: 3000,
+    watch: {
+      // The Android build writes thousands of files into apps/android; watching them
+      // burns CPU and triggers pointless reloads of the web app.
+      ignored: ["**/apps/android/**"],
+    },
   },
   plugins: lazyPlugins(() =>
     mode === "test"

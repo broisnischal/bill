@@ -14,6 +14,10 @@
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "resolvePackageJsonImports": true,
+    // Mirrors the "#/*" mapping in package.json imports. Node and Bun reject an imports
+    // key beginning with "#/", so a plain `bun run` on a script in src/ cannot resolve it
+    // without this; the bundler resolves either way, so the two stay in step.
+    "paths": { "#/*": ["./src/*"] },
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strictNullChecks": true,

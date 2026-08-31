@@ -18,10 +18,59 @@ bun install
 cp .env.example .env          # then fill BETTER_AUTH_SECRET
 docker compose up -d          # Postgres on 5455, MinIO on 9002 (console 9003)
 bun run db migrate
+bun run seed                  # a shop with items and customers, ready to bill
 bun run dev                   # http://localhost:3000
 ```
 
 Sign up, register the business, and the biller is one click away.
+
+### Nothing outside the machine
+
+Development touches no third-party service and costs nothing to run.
+
+**No SMS account.** With `SPARROW_SMS_TOKEN` unset, an OTP is never sent. The code is
+logged, and `GET /api/v1/dev/otp?phone=98XXXXXXXX` hands it back so the Android app can
+fill it in for you. That route answers only when there is no gateway configured and the
+build is not production; anywhere real it 404s. Verification itself is untouched, so the
+path being exercised locally is the one that runs in production.
+
+**No tax authority.** With `IRD_CBMS_LIVE=false`, which is the default, a bill still moves
+to `synced` and the push still lands in the audit trail, but no request leaves the
+machine. The stored response reads `{"mocked":true}`, so an audit trail from a dev
+database can never be mistaken for a real filing. Set `IRD_CBMS_LIVE=true` to reach the
+IRD sandbox at `cbapitest.ird.gov.np`.
+
+**No S3 bill.** `docker compose` brings up MinIO and the archive writes to it.
+
+`bun run seed` is idempotent and refuses to run against a database that is not on
+localhost.
+
+## The Android app
+
+Native Kotlin and Compose, in `apps/android`. It is offline-first: a bill is numbered,
+dated in Bikram Sambat, totalled and QR-coded entirely on the device, printed, and synced
+afterwards.
+
+```sh
+cd apps/android
+adb reverse tcp:3000 tcp:3000   # the phone reaches the dev server on its own localhost
+./gradlew installDebug
+```
+
+**Numbers while offline.** A device leases a block of invoice numbers from the store
+counter while it has signal. The counter advances the moment a block is granted, so a
+number printed offline can never collide with one the web app hands out. Numbers left
+unused when a block closes are recorded as a closed range with a reason rather than
+reissued, which is what turns a gap in the series into something an auditor can read.
+
+**Two calculators, one answer.** The device totals a bill itself, because the customer is
+waiting and the paper has to be right. The server recomputes on sync and refuses anything
+that disagrees, since a bill that is already in someone's hand cannot be quietly
+corrected — it has to be reversed with a credit note. `ServerParityTest` is generated from
+the server's own `computeInvoice`, `amountInWords` and `toBsString`, so the two
+implementations cannot drift without a test going red.
+
+**Two modes.** A business makes bills. A customer scans the QR printed on one and keeps it.
 
 ## What makes a bill compliant here
 

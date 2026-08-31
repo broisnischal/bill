@@ -18,9 +18,20 @@ export const env = createEnv({
       .default("true")
       .transform((value) => value !== "false"),
 
-    // IRD Central Billing Monitoring System
+    // IRD Central Billing Monitoring System.
+    // Mocked unless explicitly turned live, so development and tests never post a bill
+    // to a real tax authority. Set IRD_CBMS_LIVE=true against the sandbox or production.
+    IRD_CBMS_LIVE: z
+      .string()
+      .default("false")
+      .transform((value) => value === "true"),
     IRD_CBMS_BILL_URL: z.url().default("https://cbapi.ird.gov.np/api/bill"),
     IRD_CBMS_BILL_RETURN_URL: z.url().default("https://cbapi.ird.gov.np/api/billreturn"),
+
+    // SMS gateway for phone-number signup. Without a token no SMS is sent: the code is
+    // logged and held for the dev inbox instead, so signup works with no gateway account.
+    SPARROW_SMS_TOKEN: z.string().optional(),
+    SPARROW_SMS_FROM: z.string().default("Demo"),
 
     // OAuth2 providers, optional, update as needed
     GITHUB_CLIENT_ID: z.string().optional(),
