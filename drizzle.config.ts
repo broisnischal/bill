@@ -1,10 +1,7 @@
 import type { Config } from "drizzle-kit";
 
-// Read straight from the environment: drizzle-kit loads this config with its own
-// resolver, outside the app's `#/` import map.
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env first.");
-
+// Migrations are generated against the schema alone and applied to D1 by
+// `wrangler d1 migrations apply`, which is why there are no database credentials here.
 export default {
   out: "./drizzle",
   schema: "./src/lib/db/schema/index.ts",
@@ -12,6 +9,5 @@ export default {
   verbose: true,
   strict: true,
 
-  dialect: "postgresql",
-  dbCredentials: { url },
+  dialect: "sqlite",
 } satisfies Config;

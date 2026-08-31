@@ -123,6 +123,14 @@ export default defineConfig(({ mode }) => ({
   },
 
   // Vite config - https://vite.dev/config/
+  build: {
+    rolldownOptions: {
+      // Workers runtime modules. TanStack Start builds the server environment before
+      // nitro's cloudflare preset aliases these, so rolldown has to leave them alone
+      // rather than try to resolve them from node_modules.
+      external: [/^cloudflare:/],
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },
@@ -145,6 +153,10 @@ export default defineConfig(({ mode }) => ({
           tanstackStart(),
           // https://tanstack.com/start/latest/docs/framework/react/guide/hosting
           nitro({
+            // One Worker serves the API, the server functions and the SSR'd frontend.
+            // The D1 and R2 bindings come from wrangler.jsonc, which nitro merges into
+            // the config it writes beside the build output.
+            preset: "cloudflare-module",
             /**
              * FIXME: invalid ssr_exports from build, remove this once the Rolldown fix is out
              * @see https://github.com/TanStack/router/issues/8031

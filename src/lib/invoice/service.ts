@@ -2,7 +2,7 @@ import "@tanstack/react-start/server-only";
 import { and, eq, sql } from "drizzle-orm";
 
 import { readShopperLink } from "#/lib/api/cards.ts";
-import { db } from "#/lib/db/index.ts";
+import { type Db, db, withTransaction } from "#/lib/db/index.ts";
 import {
   customer,
   invoice,
@@ -17,7 +17,7 @@ import { buildBillPayload, buildBillReturnPayload, postToCbms } from "#/lib/ird/
 import { decryptSecret } from "#/lib/ird/credentials.ts";
 import { fiscalYearFor, toBsString } from "#/lib/nepali/date.ts";
 import { amountInWords } from "#/lib/nepali/money.ts";
-import { invoicePdfKey, putPdf } from "#/lib/storage/s3.ts";
+import { invoicePdfKey, putPdf } from "#/lib/storage/archive.ts";
 
 import { ABBREVIATED_INVOICE_LIMIT_PAISA, computeInvoice } from "./calc";
 import { consumeLeasedSequence } from "./lease";
@@ -61,9 +61,17 @@ export function formatInvoiceNumber({
   return head ? `${head}-${body}` : body;
 }
 
-/** Allocates the next number in a series. Callers must already be inside a transaction. */
+/**
+ * Allocates the next number in a series.
+ *
+ * The read and the increment are one statement, not a `SELECT ... FOR UPDATE` followed
+ * by an `UPDATE`, because D1 gives no interactive transaction to hold a row lock across
+ * two round trips. SQLite applies a single `UPDATE ... RETURNING` atomically and hands
+ * back the post-increment value, so two tills billing at once get consecutive numbers
+ * and never the same one.
+ */
 async function allocateSequence(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  tx: Db,
   {
     storeId,
     fiscalYear,
@@ -76,8 +84,8 @@ async function allocateSequence(
     .onConflictDoNothing();
 
   const [counter] = await tx
-    .select()
-    .from(invoiceCounter)
+    .update(invoiceCounter)
+    .set({ nextSequence: sql`${invoiceCounter.nextSequence} + 1` })
     .where(
       and(
         eq(invoiceCounter.storeId, storeId),
@@ -85,21 +93,9 @@ async function allocateSequence(
         eq(invoiceCounter.invoiceType, invoiceType),
       ),
     )
-    .for("update");
+    .returning({ nextSequence: invoiceCounter.nextSequence });
 
-  const sequence = counter.nextSequence;
-  await tx
-    .update(invoiceCounter)
-    .set({ nextSequence: sequence + 1 })
-    .where(
-      and(
-        eq(invoiceCounter.storeId, storeId),
-        eq(invoiceCounter.fiscalYear, fiscalYear),
-        eq(invoiceCounter.invoiceType, invoiceType),
-      ),
-    );
-
-  return sequence;
+  return counter.nextSequence - 1;
 }
 
 async function recordAudit(
@@ -161,7 +157,7 @@ export async function createInvoice({
 
   const fiscalYear = fiscalYearFor(issuedAt);
 
-  const created = await db.transaction(async (tx) => {
+  const created = await withTransaction(async (tx) => {
     const sequence = await allocateSequence(tx, {
       storeId: store.id,
       fiscalYear,
@@ -249,7 +245,15 @@ export async function createInvoice({
 
   // Archive the PDF straight away: the copy an auditor reads is written before the
   // cashier has finished handing over the change.
-  const archived = await archiveInvoicePdf({ store, invoiceId: created.id, actor });
+  const archived = await archiveInvoicePdf({ store, invoiceId: created.id, actor }).catch(
+    (error: unknown) => {
+      // The bill is issued and printable the moment the row is written. Archiving is a
+      // separate obligation, so a renderer that will not start must not cost the shop a
+      // sale: the row keeps a null pdfKey and the archive can be retaken later.
+      console.error("Could not archive the invoice PDF", error);
+      return null;
+    },
+  );
   void syncInvoiceToIrd({ store, invoiceId: created.id }).catch(() => {
     // Failures are recorded on the invoice row and retried; billing never blocks on CBMS.
   });
@@ -340,7 +344,7 @@ export async function createLeasedInvoice({
     sequence: input.sequence,
   });
 
-  const created = await db.transaction(async (tx) => {
+  const created = await withTransaction(async (tx) => {
     await consumeLeasedSequence(tx, {
       leaseId: input.leaseId,
       deviceId,
@@ -442,7 +446,15 @@ export async function createLeasedInvoice({
     return row;
   });
 
-  const archived = await archiveInvoicePdf({ store, invoiceId: created.id, actor });
+  const archived = await archiveInvoicePdf({ store, invoiceId: created.id, actor }).catch(
+    (error: unknown) => {
+      // The bill is issued and printable the moment the row is written. Archiving is a
+      // separate obligation, so a renderer that will not start must not cost the shop a
+      // sale: the row keeps a null pdfKey and the archive can be retaken later.
+      console.error("Could not archive the invoice PDF", error);
+      return null;
+    },
+  );
   void syncInvoiceToIrd({ store, invoiceId: created.id }).catch(() => {
     // Recorded on the row and retried. Billing never blocks on CBMS.
   });
@@ -549,7 +561,7 @@ export async function registerPrint({
     .update(invoice)
     .set({
       printCount: sql`${invoice.printCount} + 1`,
-      firstPrintedAt: sql`coalesce(${invoice.firstPrintedAt}, ${now.toISOString()}::timestamptz)`,
+      firstPrintedAt: sql`coalesce(${invoice.firstPrintedAt}, ${Math.floor(now.getTime() / 1000)})`,
       lastPrintedAt: now,
     })
     .where(and(eq(invoice.id, invoiceId), eq(invoice.storeId, storeId)))
@@ -635,7 +647,7 @@ export async function createCreditNote({
 
   const fiscalYear = fiscalYearFor(issuedAt);
 
-  const created = await db.transaction(async (tx) => {
+  const created = await withTransaction(async (tx) => {
     const sequence = await allocateSequence(tx, {
       storeId: store.id,
       fiscalYear,
@@ -708,7 +720,15 @@ export async function createCreditNote({
     return row;
   });
 
-  const archived = await archiveInvoicePdf({ store, invoiceId: created.id, actor });
+  const archived = await archiveInvoicePdf({ store, invoiceId: created.id, actor }).catch(
+    (error: unknown) => {
+      // The bill is issued and printable the moment the row is written. Archiving is a
+      // separate obligation, so a renderer that will not start must not cost the shop a
+      // sale: the row keeps a null pdfKey and the archive can be retaken later.
+      console.error("Could not archive the invoice PDF", error);
+      return null;
+    },
+  );
   void syncInvoiceToIrd({ store, invoiceId: created.id }).catch(() => {});
 
   return archived ?? created;

@@ -9,8 +9,8 @@ import { devInboxEnabled, readDevOtp } from "#/lib/sms/dev-inbox.ts";
  *
  * Without an SMS gateway there is no way to receive an OTP, which would make signing in
  * on a phone impossible locally. This hands back the code that was logged instead. It
- * answers only when there is genuinely no gateway configured and the build is not
- * production, so on a deployed server the route behaves as though it does not exist.
+ * answers only when there is genuinely no gateway configured and `OTP_DEBUG` is on, so
+ * a deployment with a gateway behaves as though the route does not exist.
  */
 export const Route = createFileRoute("/api/v1/dev/otp")({
   server: {
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/v1/dev/otp")({
 
           const raw = new URL(request.url).searchParams.get("phone") ?? "";
           const phoneNumber = nepaliMobileSchema.parse(raw);
-          const code = readDevOtp(phoneNumber);
+          const code = await readDevOtp(phoneNumber);
           if (!code) throw new ApiError(404, "no_code", "No code has been sent to that number");
 
           return json({ phoneNumber, code });

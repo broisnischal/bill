@@ -1,15 +1,11 @@
 import {
-  bigint,
-  boolean,
   index,
   integer,
-  jsonb,
-  pgTable,
   primaryKey,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth.schema";
 import { device, invoiceNumberLease } from "./device.schema";
@@ -28,7 +24,7 @@ import type {
  * Numbers are allocated under `SELECT ... FOR UPDATE` inside the invoice transaction so
  * the series stays sequential with no gaps, which is what the e-billing procedure requires.
  */
-export const invoiceCounter = pgTable(
+export const invoiceCounter = sqliteTable(
   "invoice_counter",
   {
     storeId: text("store_id")
@@ -49,7 +45,7 @@ export const invoiceCounter = pgTable(
  *
  * All money is stored in paisa as integers. No floats touch an amount.
  */
-export const invoice = pgTable(
+export const invoice = sqliteTable(
   "invoice",
   {
     id: text("id")
@@ -86,21 +82,19 @@ export const invoice = pgTable(
     buyerAddress: text("buyer_address"),
     buyerPhone: text("buyer_phone"),
 
-    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull(),
+    issuedAt: integer("issued_at", { mode: "timestamp" }).notNull(),
     /** Bill date in Bikram Sambat, "YYYY-MM-DD", as printed (मिति). */
     miti: text("miti").notNull(),
 
-    subTotalPaisa: bigint("sub_total_paisa", { mode: "number" }).notNull(),
-    discountPaisa: bigint("discount_paisa", { mode: "number" }).notNull().default(0),
-    taxableAmountPaisa: bigint("taxable_amount_paisa", { mode: "number" }).notNull(),
-    nonTaxableAmountPaisa: bigint("non_taxable_amount_paisa", { mode: "number" })
-      .notNull()
-      .default(0),
+    subTotalPaisa: integer("sub_total_paisa").notNull(),
+    discountPaisa: integer("discount_paisa").notNull().default(0),
+    taxableAmountPaisa: integer("taxable_amount_paisa").notNull(),
+    nonTaxableAmountPaisa: integer("non_taxable_amount_paisa").notNull().default(0),
     /** VAT rate in basis points at the time of issue: 1300 is 13%. */
     vatRateBp: integer("vat_rate_bp").notNull().default(1300),
-    vatAmountPaisa: bigint("vat_amount_paisa", { mode: "number" }).notNull().default(0),
-    roundOffPaisa: bigint("round_off_paisa", { mode: "number" }).notNull().default(0),
-    totalPaisa: bigint("total_paisa", { mode: "number" }).notNull(),
+    vatAmountPaisa: integer("vat_amount_paisa").notNull().default(0),
+    roundOffPaisa: integer("round_off_paisa").notNull().default(0),
+    totalPaisa: integer("total_paisa").notNull(),
     amountInWords: text("amount_in_words").notNull(),
 
     paymentMethod: text("payment_method").$type<PaymentMethod>().notNull().default("cash"),
@@ -109,38 +103,38 @@ export const invoice = pgTable(
      * sale starts at zero or at a part payment, and the rest arrives as `invoice_payment`
      * rows. What is still owed is the total less this and less those.
      */
-    paidAtIssuePaisa: bigint("paid_at_issue_paisa", { mode: "number" }).notNull().default(0),
+    paidAtIssuePaisa: integer("paid_at_issue_paisa").notNull().default(0),
     /** When the shop expects to be paid. Only meaningful on a credit sale. */
     dueMiti: text("due_miti"),
     notes: text("notes"),
 
     status: text("status").$type<InvoiceStatus>().notNull().default("active"),
-    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelledAt: integer("cancelled_at", { mode: "timestamp" }),
     cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
 
     /** Print tracking. The first copy is the original; every later one prints as a copy. */
     printCount: integer("print_count").notNull().default(0),
-    firstPrintedAt: timestamp("first_printed_at", { withTimezone: true }),
-    lastPrintedAt: timestamp("last_printed_at", { withTimezone: true }),
+    firstPrintedAt: integer("first_printed_at", { mode: "timestamp" }),
+    lastPrintedAt: integer("last_printed_at", { mode: "timestamp" }),
 
     enteredById: text("entered_by_id").references(() => user.id, { onDelete: "set null" }),
     /** Snapshot of the biller's name, so the bill still reads correctly if the user is removed. */
     enteredByName: text("entered_by_name").notNull(),
 
     irdSyncStatus: text("ird_sync_status").$type<IrdSyncStatus>().notNull().default("pending"),
-    irdSyncedAt: timestamp("ird_synced_at", { withTimezone: true }),
+    irdSyncedAt: integer("ird_synced_at", { mode: "timestamp" }),
     irdSyncAttempts: integer("ird_sync_attempts").notNull().default(0),
     irdLastError: text("ird_last_error"),
     /** What CBMS answered, kept verbatim as text so the audit record cannot be reshaped. */
-    irdResponse: jsonb("ird_response").$type<{ status: number; body: string }>(),
+    irdResponse: text("ird_response", { mode: "json" }).$type<{ status: number; body: string }>(),
     /** False when the bill was queued offline and pushed later, which CBMS wants to know. */
-    isRealtime: boolean("is_realtime").notNull().default(true),
+    isRealtime: integer("is_realtime", { mode: "boolean" }).notNull().default(true),
 
     /** Which till wrote the bill, and the lease its number came from when written offline. */
     deviceId: text("device_id").references(() => device.id, { onDelete: "restrict" }),
     leaseId: text("lease_id").references(() => invoiceNumberLease.id, { onDelete: "restrict" }),
     /** When the device wrote it, against `createdAt`, when the server received it. */
-    queuedAt: timestamp("queued_at", { withTimezone: true }),
+    queuedAt: integer("queued_at", { mode: "timestamp" }),
 
     /**
      * Opaque handle printed as a QR code so the buyer can file the bill in their own app.
@@ -155,7 +149,9 @@ export const invoice = pgTable(
     pdfSha256: text("pdf_sha256"),
     pdfBytes: integer("pdf_bytes"),
 
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex("invoice_store_number_uidx").on(table.storeId, table.invoiceNumber),
@@ -175,7 +171,7 @@ export const invoice = pgTable(
 );
 
 /** A line on a bill. Quantity is stored in thousandths so 2.5 kg is 2500. */
-export const invoiceItem = pgTable(
+export const invoiceItem = sqliteTable(
   "invoice_item",
   {
     id: text("id")
@@ -190,12 +186,12 @@ export const invoiceItem = pgTable(
     description: text("description").notNull(),
     hsCode: text("hs_code"),
     unit: text("unit").notNull().default("pcs"),
-    quantityMilli: bigint("quantity_milli", { mode: "number" }).notNull(),
-    unitPricePaisa: bigint("unit_price_paisa", { mode: "number" }).notNull(),
-    discountPaisa: bigint("discount_paisa", { mode: "number" }).notNull().default(0),
+    quantityMilli: integer("quantity_milli").notNull(),
+    unitPricePaisa: integer("unit_price_paisa").notNull(),
+    discountPaisa: integer("discount_paisa").notNull().default(0),
     /** False for exempt goods; those amounts land in the invoice's non-taxable total. */
-    vatApplicable: boolean("vat_applicable").notNull().default(true),
-    lineTotalPaisa: bigint("line_total_paisa", { mode: "number" }).notNull(),
+    vatApplicable: integer("vat_applicable", { mode: "boolean" }).notNull().default(true),
+    lineTotalPaisa: integer("line_total_paisa").notNull(),
   },
   (table) => [
     uniqueIndex("invoice_item_line_uidx").on(table.invoiceId, table.lineNo),
@@ -211,7 +207,7 @@ export const invoiceItem = pgTable(
  * is never edited, so payments are their own rows: the bill still says what it always
  * said, and what is outstanding is the sum of what has come in since.
  */
-export const invoicePayment = pgTable(
+export const invoicePayment = sqliteTable(
   "invoice_payment",
   {
     id: text("id")
@@ -223,15 +219,17 @@ export const invoicePayment = pgTable(
     storeId: text("store_id")
       .notNull()
       .references(() => store.id, { onDelete: "restrict" }),
-    amountPaisa: bigint("amount_paisa", { mode: "number" }).notNull(),
+    amountPaisa: integer("amount_paisa").notNull(),
     method: text("method").$type<PaymentMethod>().notNull().default("cash"),
-    receivedAt: timestamp("received_at", { withTimezone: true }).notNull(),
+    receivedAt: integer("received_at", { mode: "timestamp" }).notNull(),
     /** Bikram Sambat date the money came in, which is how a shop's ledger reads. */
     miti: text("miti").notNull(),
     note: text("note"),
     recordedById: text("recorded_by_id").references(() => user.id, { onDelete: "set null" }),
     deviceId: text("device_id"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index("invoice_payment_invoice_idx").on(table.invoiceId),
@@ -243,7 +241,7 @@ export const invoicePayment = pgTable(
  * Append-only trail. Rows are inserted, never updated or deleted, which is the part of
  * the e-billing procedure an auditor actually reads.
  */
-export const invoiceAudit = pgTable(
+export const invoiceAudit = sqliteTable(
   "invoice_audit",
   {
     id: text("id")
@@ -258,10 +256,12 @@ export const invoiceAudit = pgTable(
     action: text("action").$type<AuditAction>().notNull(),
     actorId: text("actor_id").references(() => user.id, { onDelete: "set null" }),
     actorName: text("actor_name"),
-    at: timestamp("at", { withTimezone: true }).defaultNow().notNull(),
+    at: integer("at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
-    meta: jsonb("meta").$type<AuditMeta>(),
+    meta: text("meta", { mode: "json" }).$type<AuditMeta>(),
   },
   (table) => [
     index("invoice_audit_invoice_idx").on(table.invoiceId),

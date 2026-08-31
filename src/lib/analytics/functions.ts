@@ -7,6 +7,9 @@ import { invoice, invoiceItem } from "#/lib/db/schema/index.ts";
 import { BS_MONTHS, fiscalYearRange } from "#/lib/nepali/date.ts";
 import { storeMiddleware } from "#/lib/store/middleware.ts";
 
+/** Nepal runs at UTC+05:45, which is where a shop's day starts and ends. */
+const KATHMANDU_OFFSET_SECONDS = 5 * 3600 + 45 * 60;
+
 /**
  * Sales analysis over what has already been billed.
  *
@@ -109,14 +112,14 @@ export const $salesAnalytics = createServerFn({ method: "GET" })
 
     const dayRows = await db
       .select({
-        day: sql<string>`to_char((${invoice.issuedAt} at time zone 'Asia/Kathmandu')::date, 'YYYY-MM-DD')`,
+        day: sql<string>`date(${invoice.issuedAt} + ${KATHMANDU_OFFSET_SECONDS}, 'unixepoch')`,
         salesPaisa: signed(invoice.totalPaisa),
         documents: count(),
       })
       .from(invoice)
       .where(and(counted, gte(invoice.issuedAt, new Date(Date.now() - 30 * 86_400_000))))
-      .groupBy(sql`(${invoice.issuedAt} at time zone 'Asia/Kathmandu')::date`)
-      .orderBy(sql`(${invoice.issuedAt} at time zone 'Asia/Kathmandu')::date`);
+      .groupBy(sql`date(${invoice.issuedAt} + ${KATHMANDU_OFFSET_SECONDS}, 'unixepoch')`)
+      .orderBy(sql`date(${invoice.issuedAt} + ${KATHMANDU_OFFSET_SECONDS}, 'unixepoch')`);
 
     const cancelled = statusRows
       .filter((row) => row.status === "cancelled")

@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth.schema";
 import { invoice } from "./invoice.schema";
@@ -10,7 +10,7 @@ import type { DevicePlatform, InvoiceType, LeaseStatus, WebLoginStatus } from ".
  * lease is granted to, so a lost phone's outstanding numbers can be closed without
  * touching any other till in the shop.
  */
-export const device = pgTable(
+export const device = sqliteTable(
   "device",
   {
     /** Generated on the device at first launch and sent with every request. */
@@ -25,8 +25,12 @@ export const device = pgTable(
     platform: text("platform").$type<DevicePlatform>().notNull(),
     appVersion: text("app_version"),
     pushToken: text("push_token"),
-    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index("device_store_idx").on(table.storeId),
@@ -43,7 +47,7 @@ export const device = pgTable(
  * when a lease closes are not reissued: the closed range stays here as the auditable
  * record of why a series skips, which is the trade the offline requirement forces.
  */
-export const invoiceNumberLease = pgTable(
+export const invoiceNumberLease = sqliteTable(
   "invoice_number_lease",
   {
     id: text("id")
@@ -68,9 +72,11 @@ export const invoiceNumberLease = pgTable(
     /** Why the lease was closed while numbers were still unused, for the auditor. */
     closeReason: text("close_reason"),
 
-    issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    closedAt: timestamp("closed_at", { withTimezone: true }),
+    issuedAt: integer("issued_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    closedAt: integer("closed_at", { mode: "timestamp" }),
   },
   (table) => [
     uniqueIndex("lease_series_start_uidx").on(
@@ -92,7 +98,7 @@ export const invoiceNumberLease = pgTable(
  * not a regular. The token is opaque and only resolves for a signed-in store, so being
  * handed the code is what grants the lookup; nothing here is public.
  */
-export const shopperProfile = pgTable(
+export const shopperProfile = sqliteTable(
   "shopper_profile",
   {
     id: text("id")
@@ -109,9 +115,11 @@ export const shopperProfile = pgTable(
     phone: text("phone"),
     pan: text("pan"),
     address: text("address"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),
   },
@@ -133,7 +141,7 @@ export const shopperProfile = pgTable(
  * that safe is that it expires in minutes, dies after a handful of wrong guesses, and can
  * only ever be approved by someone already holding a signed-in phone.
  */
-export const webLoginRequest = pgTable(
+export const webLoginRequest = sqliteTable(
   "web_login_request",
   {
     id: text("id")
@@ -148,14 +156,16 @@ export const webLoginRequest = pgTable(
     approvedByUserId: text("approved_by_user_id").references(() => user.id, {
       onDelete: "cascade",
     }),
-    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvedAt: integer("approved_at", { mode: "timestamp" }),
     /** Wrong guesses. A few is a typo; more than that is someone trying codes. */
     attempts: integer("attempts").notNull().default(0),
     /** Where the browser was, so the phone can say what it is about to let in. */
     userAgent: text("user_agent"),
     ipAddress: text("ip_address"),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex("web_login_code_uidx").on(table.code),
@@ -169,7 +179,7 @@ export const webLoginRequest = pgTable(
  * whole of customer mode: the shopper never gets access to the store, only to the
  * documents they were handed.
  */
-export const savedBill = pgTable(
+export const savedBill = sqliteTable(
   "saved_bill",
   {
     id: text("id")
@@ -181,7 +191,9 @@ export const savedBill = pgTable(
     invoiceId: text("invoice_id")
       .notNull()
       .references(() => invoice.id, { onDelete: "cascade" }),
-    savedAt: timestamp("saved_at", { withTimezone: true }).defaultNow().notNull(),
+    savedAt: integer("saved_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex("saved_bill_user_invoice_uidx").on(table.userId, table.invoiceId),

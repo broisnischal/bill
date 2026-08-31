@@ -1,7 +1,7 @@
 import "@tanstack/react-start/server-only";
 import { and, eq } from "drizzle-orm";
 
-import { db } from "#/lib/db/index.ts";
+import { db, withTransaction } from "#/lib/db/index.ts";
 import { store, storeMember } from "#/lib/db/schema/index.ts";
 import { bsStringToAd, toAdDateString } from "#/lib/nepali/date.ts";
 
@@ -72,7 +72,7 @@ export async function registerStore({
     );
   }
 
-  return db.transaction(async (tx) => {
+  return withTransaction(async (tx) => {
     const [created] = await tx
       .insert(store)
       .values({

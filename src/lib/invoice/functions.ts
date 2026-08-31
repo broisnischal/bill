@@ -1,12 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, setResponseStatus } from "@tanstack/react-start/server";
-import { and, count, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, like, lt, or, sql } from "drizzle-orm";
 import * as z from "zod";
 
 import { db } from "#/lib/db/index.ts";
 import { invoice, invoiceAudit, invoiceItem } from "#/lib/db/schema/index.ts";
 import { fiscalYearRange } from "#/lib/nepali/date.ts";
-import { signedPdfUrl } from "#/lib/storage/s3.ts";
 import { storeAdminMiddleware, storeMiddleware } from "#/lib/store/middleware.ts";
 
 import {
@@ -59,9 +58,9 @@ export const $listInvoices = createServerFn({ method: "GET" })
       const term = `%${data.search}%`;
       filters.push(
         or(
-          ilike(invoice.invoiceNumber, term),
-          ilike(invoice.buyerName, term),
-          ilike(invoice.buyerPan, term),
+          like(invoice.invoiceNumber, term),
+          like(invoice.buyerName, term),
+          like(invoice.buyerPan, term),
         )!,
       );
     }
@@ -161,7 +160,9 @@ export const $getInvoicePdfUrl = createServerFn({ method: "POST" })
       )?.pdfKey;
 
     if (!key) throw new Error("Could not archive the PDF for this invoice");
-    return { url: await signedPdfUrl(key), key };
+    // R2 has no presigned URLs, so the download goes back through the app route that
+    // already streams the archived bytes and checks the caller owns the bill.
+    return { url: `/api/invoices/${data.invoiceId}/pdf`, key };
   });
 
 export const $retryIrdSync = createServerFn({ method: "POST" })

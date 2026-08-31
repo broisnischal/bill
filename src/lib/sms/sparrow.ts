@@ -16,7 +16,7 @@ export async function sendSms({ to, text }: { to: string; text: string }) {
     // No gateway account: the message goes to the console and to the dev inbox, which is
     // what lets the app sign in during development without one.
     console.info(`[sms] to ${to}: ${text}`);
-    recordDevSms(to, text);
+    await recordDevSms(to, text);
     return;
   }
 

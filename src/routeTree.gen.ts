@@ -16,6 +16,7 @@ import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
+import { Route as BTokenRouteImport } from './routes/b/$token'
 import { Route as PrintInvoiceIdRouteImport } from './routes/print/$invoiceId'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
 import { Route as AuthAppCustomersRouteImport } from './routes/_auth/app/customers'
@@ -75,6 +76,11 @@ const GuestSignupRoute = GuestSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => GuestRouteRoute,
+} as any)
+const BTokenRoute = BTokenRouteImport.update({
+  id: '/b/$token',
+  path: '/b/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PrintInvoiceIdRoute = PrintInvoiceIdRouteImport.update({
   id: '/print/$invoiceId',
@@ -215,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/b/$token': typeof BTokenRoute
   '/print/$invoiceId': typeof PrintInvoiceIdRoute
   '/app/customers': typeof AuthAppCustomersRoute
   '/app/items': typeof AuthAppItemsRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthOnboardingRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/b/$token': typeof BTokenRoute
   '/print/$invoiceId': typeof PrintInvoiceIdRoute
   '/app/customers': typeof AuthAppCustomersRoute
   '/app/items': typeof AuthAppItemsRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
+  '/b/$token': typeof BTokenRoute
   '/print/$invoiceId': typeof PrintInvoiceIdRoute
   '/_auth/app/customers': typeof AuthAppCustomersRoute
   '/_auth/app/items': typeof AuthAppItemsRoute
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/login'
     | '/signup'
+    | '/b/$token'
     | '/print/$invoiceId'
     | '/app/customers'
     | '/app/items'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/login'
     | '/signup'
+    | '/b/$token'
     | '/print/$invoiceId'
     | '/app/customers'
     | '/app/items'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/_auth/onboarding'
     | '/_guest/login'
     | '/_guest/signup'
+    | '/b/$token'
     | '/print/$invoiceId'
     | '/_auth/app/customers'
     | '/_auth/app/items'
@@ -417,6 +429,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
+  BTokenRoute: typeof BTokenRoute
   PrintInvoiceIdRoute: typeof PrintInvoiceIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1BootstrapRoute: typeof ApiV1BootstrapRoute
@@ -486,6 +499,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/signup'
       preLoaderRoute: typeof GuestSignupRouteImport
       parentRoute: typeof GuestRouteRoute
+    }
+    '/b/$token': {
+      id: '/b/$token'
+      path: '/b/$token'
+      fullPath: '/b/$token'
+      preLoaderRoute: typeof BTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/print/$invoiceId': {
       id: '/print/$invoiceId'
@@ -745,6 +765,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   GuestRouteRoute: GuestRouteRouteWithChildren,
+  BTokenRoute: BTokenRoute,
   PrintInvoiceIdRoute: PrintInvoiceIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1BootstrapRoute: ApiV1BootstrapRoute,

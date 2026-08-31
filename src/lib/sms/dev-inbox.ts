@@ -1,49 +1,46 @@
 import "@tanstack/react-start/server-only";
+import { eq, lt } from "drizzle-orm";
+
 import { env } from "#/env/server.ts";
+import { db } from "#/lib/db/index.ts";
+import { devSmsCode } from "#/lib/db/schema/index.ts";
 
 /**
  * The last code sent to each number, when there is no SMS gateway configured.
  *
- * Signing in needs an OTP, and a developer with no Sparrow account has no way to receive
- * one. Rather than weaken verification with a fixed code, the message that would have
- * been sent is kept here for a few minutes and served over a route that refuses to exist
- * outside development. The real verification path is untouched.
+ * Signing in needs an OTP, and a shop with no Sparrow account has no way to receive one.
+ * Rather than weaken verification with a fixed code, the message that would have been
+ * sent is held for a few minutes and served over a route that refuses to answer unless
+ * this is switched on. The real verification path is untouched.
  */
 
-interface Delivered {
-  code: string;
-  at: number;
-}
-
-const inbox = new Map<string, Delivered>();
-
-/** Codes are short-lived anyway; this only stops the map growing without bound. */
+/** Codes are short-lived anyway; this only stops the table growing without bound. */
 const TTL_MS = 10 * 60 * 1000;
-const MAX_ENTRIES = 100;
 
-/** True when there is no gateway to send through, which is what makes the inbox safe. */
-export const devInboxEnabled = !env.SPARROW_SMS_TOKEN && process.env.NODE_ENV !== "production";
+/** True when there is no gateway to send through and the deployment asked for the inbox. */
+export const devInboxEnabled = !env.SPARROW_SMS_TOKEN && env.OTP_DEBUG;
 
-export function recordDevSms(phoneNumber: string, text: string) {
+export async function recordDevSms(phoneNumber: string, text: string) {
   if (!devInboxEnabled) return;
 
   const code = text.match(/\b(\d{4,8})\b/)?.[1];
   if (!code) return;
 
-  if (inbox.size >= MAX_ENTRIES) {
-    const oldest = [...inbox.entries()].sort((a, b) => a[1].at - b[1].at)[0];
-    if (oldest) inbox.delete(oldest[0]);
-  }
-  inbox.set(phoneNumber, { code, at: Date.now() });
+  const sentAt = new Date();
+  await db
+    .insert(devSmsCode)
+    .values({ phoneNumber, code, sentAt })
+    .onConflictDoUpdate({ target: devSmsCode.phoneNumber, set: { code, sentAt } });
+
+  await db.delete(devSmsCode).where(lt(devSmsCode.sentAt, new Date(Date.now() - TTL_MS)));
 }
 
-export function readDevOtp(phoneNumber: string) {
+export async function readDevOtp(phoneNumber: string) {
   if (!devInboxEnabled) return null;
-  const entry = inbox.get(phoneNumber);
+
+  const [entry] = await db.select().from(devSmsCode).where(eq(devSmsCode.phoneNumber, phoneNumber));
+
   if (!entry) return null;
-  if (Date.now() - entry.at > TTL_MS) {
-    inbox.delete(phoneNumber);
-    return null;
-  }
+  if (Date.now() - entry.sentAt.getTime() > TTL_MS) return null;
   return entry.code;
 }

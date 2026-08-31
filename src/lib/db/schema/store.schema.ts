@@ -1,14 +1,4 @@
-import {
-  bigint,
-  boolean,
-  date,
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth.schema";
 import type { BusinessType, StoreRole, TaxpayerType } from "./types";
@@ -17,7 +7,7 @@ import type { BusinessType, StoreRole, TaxpayerType } from "./types";
  * A registered business. Everything else in the system hangs off a store, and a
  * store carries the details the IRD requires to be printed on every bill it issues.
  */
-export const store = pgTable(
+export const store = sqliteTable(
   "store",
   {
     id: text("id")
@@ -36,7 +26,7 @@ export const store = pgTable(
     pan: text("pan").notNull(),
     taxpayerType: text("taxpayer_type").$type<TaxpayerType>().notNull().default("vat"),
     /** Date the business was registered for VAT/PAN, both calendars, as on the certificate. */
-    registrationDate: date("registration_date").notNull(),
+    registrationDate: text("registration_date").notNull(),
     registrationDateBs: text("registration_date_bs").notNull(),
     /** Company/firm registration number from OCR, DoI or the municipality. */
     registrationNumber: text("registration_number"),
@@ -69,14 +59,16 @@ export const store = pgTable(
     bankDetails: text("bank_details"),
 
     // IRD Central Billing Monitoring System
-    cbmsEnabled: boolean("cbms_enabled").notNull().default(false),
+    cbmsEnabled: integer("cbms_enabled", { mode: "boolean" }).notNull().default(false),
     cbmsUsername: text("cbms_username"),
     /** AES-256-GCM ciphertext. Never written or read in plaintext. See lib/ird/credentials.ts */
     cbmsPasswordEncrypted: text("cbms_password_encrypted"),
 
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),
   },
@@ -87,7 +79,7 @@ export const store = pgTable(
 );
 
 /** Who may bill on behalf of a store. The owner row is created with the store. */
-export const storeMember = pgTable(
+export const storeMember = sqliteTable(
   "store_member",
   {
     id: text("id")
@@ -100,7 +92,9 @@ export const storeMember = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     role: text("role").$type<StoreRole>().notNull().default("cashier"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex("store_member_store_user_uidx").on(table.storeId, table.userId),
@@ -109,7 +103,7 @@ export const storeMember = pgTable(
 );
 
 /** A buyer. Invoices snapshot these values, so editing a customer never rewrites history. */
-export const customer = pgTable(
+export const customer = sqliteTable(
   "customer",
   {
     id: text("id")
@@ -123,9 +117,11 @@ export const customer = pgTable(
     address: text("address"),
     phone: text("phone"),
     email: text("email"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),
   },
@@ -136,7 +132,7 @@ export const customer = pgTable(
 );
 
 /** A sellable good or service. Prices are paisa, so 1 rupee is 100. */
-export const item = pgTable(
+export const item = sqliteTable(
   "item",
   {
     id: text("id")
@@ -153,13 +149,15 @@ export const item = pgTable(
     /** EAN-13, UPC-A or whatever the packet carries, as scanned off the product. */
     barcode: text("barcode"),
     unit: text("unit").notNull().default("pcs"),
-    unitPricePaisa: bigint("unit_price_paisa", { mode: "number" }).notNull().default(0),
+    unitPricePaisa: integer("unit_price_paisa").notNull().default(0),
     /** False for VAT-exempt goods listed in Schedule 1 of the VAT Act. */
-    vatApplicable: boolean("vat_applicable").notNull().default(true),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
+    vatApplicable: integer("vat_applicable", { mode: "boolean" }).notNull().default(true),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),
   },

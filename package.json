@@ -22,7 +22,7 @@
     "check:fix": "vp check --fix",
     "prepare": "vp config",
     "db": "drizzle-kit",
-    "seed": "vp exec dotenvx run -- bun run src/lib/db/seed.ts",
+    "seed": "bun run src/lib/db/seed.ts > drizzle/seed.sql && echo 'wrote drizzle/seed.sql'",
     "deps": "vpx taze@latest -Ilw --maturity-period 3",
     "tanstack": "vpx @tanstack/cli@latest",
     "ui": "vpx shadcn@latest",

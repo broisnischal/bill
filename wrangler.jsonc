@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bill",
+  "compatibility_date": "2026-08-06",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The whole app is one Worker: the API, the server functions and the SSR'd frontend.
+  // Nitro merges this file into the config it writes next to the build output, so the
+  // bindings below are the only Cloudflare-specific thing the repo carries.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bill",
+      "database_id": "48cdd9b6-61ab-4f47-a786-7867a6c58bc8",
+    },
+  ],
+
+  // Archived invoice PDFs, keyed stores/{store}/{fiscal year}/{number}-a4.pdf.
+  "r2_buckets": [
+    {
+      "binding": "ARCHIVE",
+      "bucket_name": "bill-invoices",
+    },
+  ],
+
+  // Everything the server reads through src/env/server.ts. Declared here rather than
+  // left to a .env file, so what the deployed Worker runs on is in version control and
+  // does not depend on whose machine ran the deploy. BETTER_AUTH_SECRET is a secret
+  // (`wrangler secret put`), never a var.
+  "vars": {
+    // The origin the app calls itself at. The client bundle gets the same value at build
+    // time from .env.production; the two have to agree or auth breaks.
+    "VITE_BASE_URL": "https://bill.jotko.workers.dev",
+
+    // Nothing is posted to the tax authority until this is turned on deliberately.
+    "IRD_CBMS_LIVE": "false",
+    "IRD_CBMS_BILL_URL": "https://cbapi.ird.gov.np/api/bill",
+    "IRD_CBMS_BILL_RETURN_URL": "https://cbapi.ird.gov.np/api/billreturn",
+
+    // No SMS account yet, so the code that would have been texted is readable over
+    // /api/v1/dev/otp. Drop this the moment SPARROW_SMS_TOKEN is set as a secret.
+    "OTP_DEBUG": "true",
+    "SPARROW_SMS_FROM": "Demo",
+  },
+
+  "observability": {
+    "enabled": true,
+  },
+}

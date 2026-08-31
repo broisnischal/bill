@@ -1,7 +1,7 @@
 import "@tanstack/react-start/server-only";
-import { and, asc, eq, inArray, lt, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, lte, sql } from "drizzle-orm";
 
-import { db } from "#/lib/db/index.ts";
+import { type Db, db, withTransaction } from "#/lib/db/index.ts";
 import { device, invoiceCounter, invoiceNumberLease } from "#/lib/db/schema/index.ts";
 import type { InvoiceType } from "#/lib/db/schema/types.ts";
 
@@ -25,7 +25,7 @@ export const LEASE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 /** Leases are topped up so a device always leaves the network with at least this many. */
 export const LEASE_LOW_WATER = 20;
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type Tx = Db;
 
 /**
  * A number that cannot be filed under this store, ever.
@@ -115,9 +115,12 @@ async function takeFromCounter(
     .values({ storeId, fiscalYear, invoiceType, nextSequence: 1 })
     .onConflictDoNothing();
 
+  // One statement claims the whole block: SQLite applies the increment atomically and
+  // returns the counter as it now stands, so a second device asking at the same moment
+  // is handed the range after this one rather than the same numbers again.
   const [counter] = await tx
-    .select()
-    .from(invoiceCounter)
+    .update(invoiceCounter)
+    .set({ nextSequence: sql`${invoiceCounter.nextSequence} + ${count}` })
     .where(
       and(
         eq(invoiceCounter.storeId, storeId),
@@ -125,20 +128,9 @@ async function takeFromCounter(
         eq(invoiceCounter.invoiceType, invoiceType),
       ),
     )
-    .for("update");
+    .returning({ nextSequence: invoiceCounter.nextSequence });
 
-  const start = counter.nextSequence;
-  await tx
-    .update(invoiceCounter)
-    .set({ nextSequence: start + count })
-    .where(
-      and(
-        eq(invoiceCounter.storeId, storeId),
-        eq(invoiceCounter.fiscalYear, fiscalYear),
-        eq(invoiceCounter.invoiceType, invoiceType),
-      ),
-    );
-
+  const start = counter.nextSequence - count;
   return { start, end: start + count - 1 };
 }
 
@@ -162,7 +154,7 @@ export async function ensureLeases({
   want?: number;
   now?: Date;
 }): Promise<LeaseBlock[]> {
-  return db.transaction(async (tx) => {
+  return withTransaction(async (tx) => {
     await closeStaleLeases(tx, deviceId, now);
 
     const open = await tx
@@ -237,8 +229,7 @@ export async function consumeLeasedSequence(
   const [lease] = await tx
     .select()
     .from(invoiceNumberLease)
-    .where(eq(invoiceNumberLease.id, leaseId))
-    .for("update");
+    .where(eq(invoiceNumberLease.id, leaseId));
 
   // These are permanent. A block that was never granted to this device, or a number
   // outside it, will not become valid by waiting, so the push has to fail in a way the

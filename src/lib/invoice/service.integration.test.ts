@@ -17,7 +17,7 @@ async function load() {
     import("#/lib/db/index.ts"),
     import("#/lib/db/schema/index.ts"),
     import("./service.ts"),
-    import("#/lib/storage/s3.ts"),
+    import("#/lib/storage/archive.ts"),
   ]);
   return { db, schema, service, storage };
 }

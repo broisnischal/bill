@@ -2,132 +2,176 @@
  * A shop you can bill from immediately.
  *
  * Getting to a usable state by hand means an OTP, a registration form and a catalogue
- * before you can look at the screen you are actually working on. This creates all of it
- * in one command, and refuses to run against anything but a local database so it cannot
- * be pointed at real data by accident.
+ * before you can look at the screen you are actually working on. This writes all of it
+ * as SQL instead of executing it, because the database is now D1 and the only way into
+ * a D1 is `wrangler d1 execute`. Emitting the statements also means the same seed can be
+ * applied to the local database or the deployed one without the script knowing which.
  *
- * Run with `bun run seed`. It is idempotent: the same PAN is reused rather than
- * duplicated, so running it twice does nothing the second time.
+ * Run with `bun run seed > drizzle/seed.sql`, then
+ * `wrangler d1 execute bill --remote --file drizzle/seed.sql`.
+ *
+ * Every row carries an id generated here rather than read back afterwards, so the whole
+ * thing is a list of inserts with no round trip. It is idempotent: each insert ignores a
+ * conflict, so applying it twice changes nothing the second time.
  */
-import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/sqlite-proxy";
 
-import { env } from "#/env/server.ts";
-import { db } from "#/lib/db/index.ts";
 import { customer, item, store, storeMember, user } from "#/lib/db/schema/index.ts";
 import { bsStringToAd, toAdDateString } from "#/lib/nepali/date.ts";
 
 const SEED_PHONE = "+9779800000000";
 const SEED_PAN = "300000001";
 
-async function seed() {
-  const host = new URL(env.DATABASE_URL).hostname;
-  if (host !== "localhost" && host !== "127.0.0.1") {
-    throw new Error(`Refusing to seed a database that is not local: ${host}`);
-  }
+/** Stable ids, so re-running the seed targets the same rows rather than making new ones. */
+const OWNER_ID = "seed-user-annapurna";
+const STORE_ID = "seed-store-annapurna";
 
-  const [existing] = await db.select().from(store).where(eq(store.pan, SEED_PAN));
-  if (existing) {
-    console.info(`Seed store already present: ${existing.name} (PAN ${existing.pan})`);
-    console.info(`Sign in as ${SEED_PHONE}; the OTP is logged by the dev server.`);
-    return;
-  }
+const statements: { sql: string; params: unknown[] }[] = [];
 
-  const [owner] = await db
-    .insert(user)
-    .values({
-      id: crypto.randomUUID(),
-      name: "Seed Shopkeeper",
-      email: `${SEED_PHONE.replace(/\D/g, "")}@phone.bill.np`,
-      emailVerified: false,
-      phoneNumber: SEED_PHONE,
-      phoneNumberVerified: true,
-    })
-    .onConflictDoNothing()
-    .returning();
+/**
+ * A driver that records instead of connecting. Drizzle builds the same SQL it would send
+ * to D1, and nothing here needs a database to be reachable.
+ */
+const db = drizzle(async (sql, params) => {
+  statements.push({ sql, params });
+  return { rows: [] };
+});
 
-  const ownerId =
-    owner?.id ?? (await db.select().from(user).where(eq(user.phoneNumber, SEED_PHONE)))[0]!.id;
-
-  const [created] = await db
-    .insert(store)
-    .values({
-      ownerId,
-      name: "Annapurna Kirana Store",
-      nameNepali: "अन्नपूर्ण किराना स्टोर",
-      pan: SEED_PAN,
-      taxpayerType: "vat",
-      registrationDate: toAdDateString(bsStringToAd("2078-03-15")),
-      registrationDateBs: "2078-03-15",
-      businessType: "sole_proprietorship",
-      taxOffice: "IRO Kathmandu 2",
-      address: "New Baneshwor, Kathmandu",
-      ward: 10,
-      municipality: "Kathmandu Metropolitan City",
-      district: "Kathmandu",
-      province: "Bagmati",
-      phone: "9800000000",
-      printFooterNote: "Goods once sold are not returnable without this bill.",
-    })
-    .returning();
-
-  await db.insert(storeMember).values({ storeId: created.id, userId: ownerId, role: "owner" });
-
-  // A spread that exercises the parts of a bill that are easy to get wrong: an exempt
-  // line, a price that does not divide evenly, and a quantity sold by weight.
-  await db.insert(item).values([
-    {
-      storeId: created.id,
-      name: "Basmati rice",
-      unit: "kg",
-      unitPricePaisa: 18_500,
-      hsCode: "1006.30",
-      vatApplicable: true,
-    },
-    {
-      storeId: created.id,
-      name: "Sunflower oil 1L",
-      unit: "pcs",
-      unitPricePaisa: 32_500,
-      hsCode: "1512.11",
-      vatApplicable: true,
-    },
-    {
-      storeId: created.id,
-      name: "Fresh milk 500ml",
-      unit: "pcs",
-      unitPricePaisa: 5_500,
-      vatApplicable: false,
-    },
-    {
-      storeId: created.id,
-      name: "Wheat flour",
-      unit: "kg",
-      unitPricePaisa: 8_333,
-      vatApplicable: false,
-    },
-    {
-      storeId: created.id,
-      name: "Detergent bar",
-      unit: "pcs",
-      unitPricePaisa: 4_500,
-      vatApplicable: true,
-    },
-  ]);
-
-  await db.insert(customer).values([
-    { storeId: created.id, name: "Sita Sharma", phone: "9841000001" },
-    {
-      storeId: created.id,
-      name: "Bikash Traders",
-      pan: "301234999",
-      phone: "9851000002",
-      address: "Kalimati, Kathmandu",
-    },
-  ]);
-
-  console.info(`Seeded "${created.name}" (PAN ${created.pan}) with 5 items and 2 customers.`);
-  console.info(`Sign in as ${SEED_PHONE}; the OTP is logged by the dev server.`);
+function literal(value: unknown): string {
+  if (value === null || value === undefined) return "NULL";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return value ? "1" : "0";
+  if (value instanceof Date) return String(value.getTime());
+  return `'${String(value).replaceAll("'", "''")}'`;
 }
 
-await seed();
-process.exit(0);
+function emit() {
+  for (const { sql, params } of statements) {
+    let index = 0;
+    const inlined = sql.replace(/\?/g, () => literal(params[index++]));
+    console.log(`${inlined};`);
+  }
+}
+
+const now = new Date();
+
+db.insert(user)
+  .values({
+    id: OWNER_ID,
+    name: "Seed Shopkeeper",
+    email: `${SEED_PHONE.replace(/\D/g, "")}@phone.bill.np`,
+    emailVerified: false,
+    phoneNumber: SEED_PHONE,
+    phoneNumberVerified: true,
+    createdAt: now,
+    updatedAt: now,
+  })
+  .onConflictDoNothing()
+  .run();
+
+db.insert(store)
+  .values({
+    id: STORE_ID,
+    ownerId: OWNER_ID,
+    name: "Annapurna Kirana Store",
+    nameNepali: "अन्नपूर्ण किराना स्टोर",
+    pan: SEED_PAN,
+    taxpayerType: "vat",
+    registrationDate: toAdDateString(bsStringToAd("2078-03-15")),
+    registrationDateBs: "2078-03-15",
+    businessType: "sole_proprietorship",
+    taxOffice: "IRO Kathmandu 2",
+    address: "New Baneshwor, Kathmandu",
+    ward: 10,
+    municipality: "Kathmandu Metropolitan City",
+    district: "Kathmandu",
+    province: "Bagmati",
+    phone: "9800000000",
+    printFooterNote: "Goods once sold are not returnable without this bill.",
+    createdAt: now,
+    updatedAt: now,
+  })
+  .onConflictDoNothing()
+  .run();
+
+db.insert(storeMember)
+  .values({
+    id: "seed-member-owner",
+    storeId: STORE_ID,
+    userId: OWNER_ID,
+    role: "owner",
+    createdAt: now,
+  })
+  .onConflictDoNothing()
+  .run();
+
+// A spread that exercises the parts of a bill that are easy to get wrong: an exempt
+// line, a price that does not divide evenly, and a quantity sold by weight.
+const items = [
+  {
+    id: "seed-item-rice",
+    name: "Basmati rice",
+    unit: "kg",
+    unitPricePaisa: 18_500,
+    hsCode: "1006.30",
+    vatApplicable: true,
+  },
+  {
+    id: "seed-item-oil",
+    name: "Sunflower oil 1L",
+    unit: "pcs",
+    unitPricePaisa: 32_500,
+    hsCode: "1512.11",
+    vatApplicable: true,
+  },
+  {
+    id: "seed-item-milk",
+    name: "Fresh milk 500ml",
+    unit: "pcs",
+    unitPricePaisa: 5_500,
+    vatApplicable: false,
+  },
+  {
+    id: "seed-item-flour",
+    name: "Wheat flour",
+    unit: "kg",
+    unitPricePaisa: 8_333,
+    vatApplicable: false,
+  },
+  {
+    id: "seed-item-soap",
+    name: "Detergent bar",
+    unit: "pcs",
+    unitPricePaisa: 4_500,
+    vatApplicable: true,
+  },
+];
+
+for (const row of items) {
+  db.insert(item)
+    .values({ ...row, storeId: STORE_ID, createdAt: now, updatedAt: now })
+    .onConflictDoNothing()
+    .run();
+}
+
+const customers = [
+  { id: "seed-customer-sita", name: "Sita Sharma", phone: "9841000001" },
+  {
+    id: "seed-customer-bikash",
+    name: "Bikash Traders",
+    pan: "301234999",
+    phone: "9851000002",
+    address: "Kalimati, Kathmandu",
+  },
+];
+
+for (const row of customers) {
+  db.insert(customer)
+    .values({ ...row, storeId: STORE_ID, createdAt: now, updatedAt: now })
+    .onConflictDoNothing()
+    .run();
+}
+
+// The builder queues asynchronously, so let the microtasks drain before printing.
+await new Promise((resolve) => setTimeout(resolve, 0));
+emit();

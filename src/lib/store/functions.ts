@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseStatus } from "@tanstack/react-start/server";
-import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, like, or } from "drizzle-orm";
 import * as z from "zod";
 
 import { authMiddleware } from "#/lib/auth/middleware.ts";
@@ -88,7 +88,7 @@ export const $listCustomers = createServerFn({ method: "GET" })
         search
           ? and(
               eq(customer.storeId, context.store.id),
-              or(ilike(customer.name, `%${search}%`), ilike(customer.pan, `%${search}%`)),
+              or(like(customer.name, `%${search}%`), like(customer.pan, `%${search}%`)),
             )
           : eq(customer.storeId, context.store.id),
       )
@@ -146,7 +146,7 @@ export const $listItems = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const filters = [eq(item.storeId, context.store.id)];
     if (!data?.includeInactive) filters.push(eq(item.active, true));
-    if (data?.search) filters.push(ilike(item.name, `%${data.search}%`));
+    if (data?.search) filters.push(like(item.name, `%${data.search}%`));
 
     return db
       .select()

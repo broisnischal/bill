@@ -4,7 +4,7 @@ import { _getUser } from "#/lib/auth/functions.ts";
 import { renderInvoicePdf } from "#/lib/invoice/pdf.ts";
 import { printFormatSchema } from "#/lib/invoice/schema.ts";
 import { archiveInvoicePdf, loadInvoiceForPrint } from "#/lib/invoice/service.ts";
-import { getPdf } from "#/lib/storage/s3.ts";
+import { getPdf } from "#/lib/storage/archive.ts";
 import { findStoreForUser } from "#/lib/store/service.ts";
 
 /**

@@ -7,9 +7,22 @@ import interBold from "@fontsource/inter/files/inter-latin-700-normal.woff2?inli
 import devanagariRegular from "@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-400-normal.woff2?inline";
 import devanagariSemibold from "@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-600-normal.woff2?inline";
 import devanagariBold from "@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-700-normal.woff2?inline";
-import { render } from "takumi-pdf";
 
 import { buildInvoiceDocument, type InvoiceDocumentInput } from "./document";
+
+/**
+ * takumi is loaded on first render rather than at import.
+ *
+ * Its wasm-bindgen glue is not shipped beside the wasm, so neither Vite's wasm plugin
+ * nor nitro's can wire up the imports the module needs, and the instantiate throws.
+ * At module scope that failure took down every route in the Worker, billing included.
+ * Behind a lazy import it is contained to the archive path, which is allowed to fail.
+ */
+let renderer: Promise<typeof import("takumi-pdf")> | undefined;
+function takumi() {
+  renderer ??= import("takumi-pdf");
+  return renderer;
+}
 
 /**
  * PDF rendering with takumi, a wasm layout engine: no headless browser to install,
@@ -52,6 +65,7 @@ export interface RenderedPdf {
 }
 
 export async function renderInvoicePdf(input: InvoiceDocumentInput): Promise<RenderedPdf> {
+  const { render } = await takumi();
   const document = buildInvoiceDocument(input);
   const shared = {
     fonts: FONTS,
