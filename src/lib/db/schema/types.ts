@@ -50,6 +50,7 @@ export type IrdSyncStatus = "not_applicable" | "pending" | "synced" | "failed";
 /** Append-only audit trail actions. The e-billing procedure requires who did what, when. */
 export type AuditAction =
   | "invoice_created"
+  | "payment_received"
   | "invoice_printed"
   | "invoice_reprinted"
   | "invoice_cancelled"
@@ -65,3 +66,20 @@ export type StoreRole = "owner" | "manager" | "cashier";
 
 /** Paper the bill is rendered for. A4 for the tax invoice, 80mm for the counter printer. */
 export type PrintFormat = "a4" | "thermal80";
+
+/** Where a bill was written. Print and sync behaviour differ per platform only in logs. */
+export type DevicePlatform = "android" | "ios" | "web";
+
+/**
+ * A number lease is open while the device may still print from it. Closing it voids the
+ * numbers that were never used; those show up as a recorded gap, never as a reissue.
+ */
+export type LeaseStatus = "open" | "exhausted" | "closed";
+
+/**
+ * A browser asking to be signed in from a phone.
+ *
+ * `approved` is terminal in the sense that the browser may collect its session once; the
+ * row then becomes `claimed` so the same code cannot be replayed.
+ */
+export type WebLoginStatus = "pending" | "approved" | "claimed" | "denied" | "expired";

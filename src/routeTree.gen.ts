@@ -23,10 +23,25 @@ import { Route as AuthAppItemsRouteImport } from './routes/_auth/app/items'
 import { Route as AuthAppReportsRouteImport } from './routes/_auth/app/reports'
 import { Route as AuthAppSettingsRouteImport } from './routes/_auth/app/settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiV1BootstrapRouteImport } from './routes/api/v1/bootstrap'
+import { Route as ApiV1CatalogRouteImport } from './routes/api/v1/catalog'
+import { Route as ApiV1DevicesRouteImport } from './routes/api/v1/devices'
+import { Route as ApiV1MeRouteImport } from './routes/api/v1/me'
+import { Route as ApiV1StoreRouteImport } from './routes/api/v1/store'
+import { Route as ApiV1SyncRouteImport } from './routes/api/v1/sync'
+import { Route as ApiV1WalletRouteImport } from './routes/api/v1/wallet'
 import { Route as AuthAppInvoicesIndexRouteImport } from './routes/_auth/app/invoices/index'
 import { Route as AuthAppInvoicesInvoiceIdRouteImport } from './routes/_auth/app/invoices/$invoiceId'
 import { Route as AuthAppInvoicesNewRouteImport } from './routes/_auth/app/invoices/new'
 import { Route as ApiInvoicesInvoiceIdPdfRouteImport } from './routes/api/invoices/$invoiceId/pdf'
+import { Route as ApiV1BillsTokenRouteImport } from './routes/api/v1/bills/$token'
+import { Route as ApiV1DevOtpRouteImport } from './routes/api/v1/dev/otp'
+import { Route as ApiV1InvoicesIndexRouteImport } from './routes/api/v1/invoices/index'
+import { Route as ApiV1InvoicesInvoiceIdRouteImport } from './routes/api/v1/invoices/$invoiceId'
+import { Route as ApiV1ProfilesTokenRouteImport } from './routes/api/v1/profiles/$token'
+import { Route as ApiV1WebLoginIndexRouteImport } from './routes/api/v1/web-login/index'
+import { Route as ApiV1WebLoginLookupRouteImport } from './routes/api/v1/web-login/lookup'
+import { Route as ApiV1InvoicesInvoiceIdCreditNoteRouteImport } from './routes/api/v1/invoices/$invoiceId/credit-note'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -96,6 +111,41 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1BootstrapRoute = ApiV1BootstrapRouteImport.update({
+  id: '/api/v1/bootstrap',
+  path: '/api/v1/bootstrap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1CatalogRoute = ApiV1CatalogRouteImport.update({
+  id: '/api/v1/catalog',
+  path: '/api/v1/catalog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DevicesRoute = ApiV1DevicesRouteImport.update({
+  id: '/api/v1/devices',
+  path: '/api/v1/devices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1MeRoute = ApiV1MeRouteImport.update({
+  id: '/api/v1/me',
+  path: '/api/v1/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1StoreRoute = ApiV1StoreRouteImport.update({
+  id: '/api/v1/store',
+  path: '/api/v1/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1SyncRoute = ApiV1SyncRouteImport.update({
+  id: '/api/v1/sync',
+  path: '/api/v1/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1WalletRoute = ApiV1WalletRouteImport.update({
+  id: '/api/v1/wallet',
+  path: '/api/v1/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthAppInvoicesIndexRoute = AuthAppInvoicesIndexRouteImport.update({
   id: '/invoices/',
   path: '/invoices/',
@@ -117,6 +167,47 @@ const ApiInvoicesInvoiceIdPdfRoute = ApiInvoicesInvoiceIdPdfRouteImport.update({
   path: '/api/invoices/$invoiceId/pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1BillsTokenRoute = ApiV1BillsTokenRouteImport.update({
+  id: '/api/v1/bills/$token',
+  path: '/api/v1/bills/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DevOtpRoute = ApiV1DevOtpRouteImport.update({
+  id: '/api/v1/dev/otp',
+  path: '/api/v1/dev/otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1InvoicesIndexRoute = ApiV1InvoicesIndexRouteImport.update({
+  id: '/api/v1/invoices/',
+  path: '/api/v1/invoices/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1InvoicesInvoiceIdRoute = ApiV1InvoicesInvoiceIdRouteImport.update({
+  id: '/api/v1/invoices/$invoiceId',
+  path: '/api/v1/invoices/$invoiceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ProfilesTokenRoute = ApiV1ProfilesTokenRouteImport.update({
+  id: '/api/v1/profiles/$token',
+  path: '/api/v1/profiles/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1WebLoginIndexRoute = ApiV1WebLoginIndexRouteImport.update({
+  id: '/api/v1/web-login/',
+  path: '/api/v1/web-login/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1WebLoginLookupRoute = ApiV1WebLoginLookupRouteImport.update({
+  id: '/api/v1/web-login/lookup',
+  path: '/api/v1/web-login/lookup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1InvoicesInvoiceIdCreditNoteRoute =
+  ApiV1InvoicesInvoiceIdCreditNoteRouteImport.update({
+    id: '/credit-note',
+    path: '/credit-note',
+    getParentRoute: () => ApiV1InvoicesInvoiceIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,11 +221,26 @@ export interface FileRoutesByFullPath {
   '/app/reports': typeof AuthAppReportsRoute
   '/app/settings': typeof AuthAppSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/bootstrap': typeof ApiV1BootstrapRoute
+  '/api/v1/catalog': typeof ApiV1CatalogRoute
+  '/api/v1/devices': typeof ApiV1DevicesRoute
+  '/api/v1/me': typeof ApiV1MeRoute
+  '/api/v1/store': typeof ApiV1StoreRoute
+  '/api/v1/sync': typeof ApiV1SyncRoute
+  '/api/v1/wallet': typeof ApiV1WalletRoute
   '/app/': typeof AuthAppIndexRoute
   '/app/invoices/$invoiceId': typeof AuthAppInvoicesInvoiceIdRoute
   '/app/invoices/new': typeof AuthAppInvoicesNewRoute
   '/api/invoices/$invoiceId/pdf': typeof ApiInvoicesInvoiceIdPdfRoute
+  '/api/v1/bills/$token': typeof ApiV1BillsTokenRoute
+  '/api/v1/dev/otp': typeof ApiV1DevOtpRoute
+  '/api/v1/invoices/$invoiceId': typeof ApiV1InvoicesInvoiceIdRouteWithChildren
+  '/api/v1/profiles/$token': typeof ApiV1ProfilesTokenRoute
+  '/api/v1/web-login/lookup': typeof ApiV1WebLoginLookupRoute
   '/app/invoices/': typeof AuthAppInvoicesIndexRoute
+  '/api/v1/invoices/': typeof ApiV1InvoicesIndexRoute
+  '/api/v1/web-login/': typeof ApiV1WebLoginIndexRoute
+  '/api/v1/invoices/$invoiceId/credit-note': typeof ApiV1InvoicesInvoiceIdCreditNoteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -147,11 +253,26 @@ export interface FileRoutesByTo {
   '/app/reports': typeof AuthAppReportsRoute
   '/app/settings': typeof AuthAppSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/bootstrap': typeof ApiV1BootstrapRoute
+  '/api/v1/catalog': typeof ApiV1CatalogRoute
+  '/api/v1/devices': typeof ApiV1DevicesRoute
+  '/api/v1/me': typeof ApiV1MeRoute
+  '/api/v1/store': typeof ApiV1StoreRoute
+  '/api/v1/sync': typeof ApiV1SyncRoute
+  '/api/v1/wallet': typeof ApiV1WalletRoute
   '/app': typeof AuthAppIndexRoute
   '/app/invoices/$invoiceId': typeof AuthAppInvoicesInvoiceIdRoute
   '/app/invoices/new': typeof AuthAppInvoicesNewRoute
   '/api/invoices/$invoiceId/pdf': typeof ApiInvoicesInvoiceIdPdfRoute
+  '/api/v1/bills/$token': typeof ApiV1BillsTokenRoute
+  '/api/v1/dev/otp': typeof ApiV1DevOtpRoute
+  '/api/v1/invoices/$invoiceId': typeof ApiV1InvoicesInvoiceIdRouteWithChildren
+  '/api/v1/profiles/$token': typeof ApiV1ProfilesTokenRoute
+  '/api/v1/web-login/lookup': typeof ApiV1WebLoginLookupRoute
   '/app/invoices': typeof AuthAppInvoicesIndexRoute
+  '/api/v1/invoices': typeof ApiV1InvoicesIndexRoute
+  '/api/v1/web-login': typeof ApiV1WebLoginIndexRoute
+  '/api/v1/invoices/$invoiceId/credit-note': typeof ApiV1InvoicesInvoiceIdCreditNoteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -168,11 +289,26 @@ export interface FileRoutesById {
   '/_auth/app/reports': typeof AuthAppReportsRoute
   '/_auth/app/settings': typeof AuthAppSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/bootstrap': typeof ApiV1BootstrapRoute
+  '/api/v1/catalog': typeof ApiV1CatalogRoute
+  '/api/v1/devices': typeof ApiV1DevicesRoute
+  '/api/v1/me': typeof ApiV1MeRoute
+  '/api/v1/store': typeof ApiV1StoreRoute
+  '/api/v1/sync': typeof ApiV1SyncRoute
+  '/api/v1/wallet': typeof ApiV1WalletRoute
   '/_auth/app/': typeof AuthAppIndexRoute
   '/_auth/app/invoices/$invoiceId': typeof AuthAppInvoicesInvoiceIdRoute
   '/_auth/app/invoices/new': typeof AuthAppInvoicesNewRoute
   '/api/invoices/$invoiceId/pdf': typeof ApiInvoicesInvoiceIdPdfRoute
+  '/api/v1/bills/$token': typeof ApiV1BillsTokenRoute
+  '/api/v1/dev/otp': typeof ApiV1DevOtpRoute
+  '/api/v1/invoices/$invoiceId': typeof ApiV1InvoicesInvoiceIdRouteWithChildren
+  '/api/v1/profiles/$token': typeof ApiV1ProfilesTokenRoute
+  '/api/v1/web-login/lookup': typeof ApiV1WebLoginLookupRoute
   '/_auth/app/invoices/': typeof AuthAppInvoicesIndexRoute
+  '/api/v1/invoices/': typeof ApiV1InvoicesIndexRoute
+  '/api/v1/web-login/': typeof ApiV1WebLoginIndexRoute
+  '/api/v1/invoices/$invoiceId/credit-note': typeof ApiV1InvoicesInvoiceIdCreditNoteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -188,11 +324,26 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/settings'
     | '/api/auth/$'
+    | '/api/v1/bootstrap'
+    | '/api/v1/catalog'
+    | '/api/v1/devices'
+    | '/api/v1/me'
+    | '/api/v1/store'
+    | '/api/v1/sync'
+    | '/api/v1/wallet'
     | '/app/'
     | '/app/invoices/$invoiceId'
     | '/app/invoices/new'
     | '/api/invoices/$invoiceId/pdf'
+    | '/api/v1/bills/$token'
+    | '/api/v1/dev/otp'
+    | '/api/v1/invoices/$invoiceId'
+    | '/api/v1/profiles/$token'
+    | '/api/v1/web-login/lookup'
     | '/app/invoices/'
+    | '/api/v1/invoices/'
+    | '/api/v1/web-login/'
+    | '/api/v1/invoices/$invoiceId/credit-note'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -205,11 +356,26 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/settings'
     | '/api/auth/$'
+    | '/api/v1/bootstrap'
+    | '/api/v1/catalog'
+    | '/api/v1/devices'
+    | '/api/v1/me'
+    | '/api/v1/store'
+    | '/api/v1/sync'
+    | '/api/v1/wallet'
     | '/app'
     | '/app/invoices/$invoiceId'
     | '/app/invoices/new'
     | '/api/invoices/$invoiceId/pdf'
+    | '/api/v1/bills/$token'
+    | '/api/v1/dev/otp'
+    | '/api/v1/invoices/$invoiceId'
+    | '/api/v1/profiles/$token'
+    | '/api/v1/web-login/lookup'
     | '/app/invoices'
+    | '/api/v1/invoices'
+    | '/api/v1/web-login'
+    | '/api/v1/invoices/$invoiceId/credit-note'
   id:
     | '__root__'
     | '/'
@@ -225,11 +391,26 @@ export interface FileRouteTypes {
     | '/_auth/app/reports'
     | '/_auth/app/settings'
     | '/api/auth/$'
+    | '/api/v1/bootstrap'
+    | '/api/v1/catalog'
+    | '/api/v1/devices'
+    | '/api/v1/me'
+    | '/api/v1/store'
+    | '/api/v1/sync'
+    | '/api/v1/wallet'
     | '/_auth/app/'
     | '/_auth/app/invoices/$invoiceId'
     | '/_auth/app/invoices/new'
     | '/api/invoices/$invoiceId/pdf'
+    | '/api/v1/bills/$token'
+    | '/api/v1/dev/otp'
+    | '/api/v1/invoices/$invoiceId'
+    | '/api/v1/profiles/$token'
+    | '/api/v1/web-login/lookup'
     | '/_auth/app/invoices/'
+    | '/api/v1/invoices/'
+    | '/api/v1/web-login/'
+    | '/api/v1/invoices/$invoiceId/credit-note'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -238,7 +419,21 @@ export interface RootRouteChildren {
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
   PrintInvoiceIdRoute: typeof PrintInvoiceIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiV1BootstrapRoute: typeof ApiV1BootstrapRoute
+  ApiV1CatalogRoute: typeof ApiV1CatalogRoute
+  ApiV1DevicesRoute: typeof ApiV1DevicesRoute
+  ApiV1MeRoute: typeof ApiV1MeRoute
+  ApiV1StoreRoute: typeof ApiV1StoreRoute
+  ApiV1SyncRoute: typeof ApiV1SyncRoute
+  ApiV1WalletRoute: typeof ApiV1WalletRoute
   ApiInvoicesInvoiceIdPdfRoute: typeof ApiInvoicesInvoiceIdPdfRoute
+  ApiV1BillsTokenRoute: typeof ApiV1BillsTokenRoute
+  ApiV1DevOtpRoute: typeof ApiV1DevOtpRoute
+  ApiV1InvoicesInvoiceIdRoute: typeof ApiV1InvoicesInvoiceIdRouteWithChildren
+  ApiV1ProfilesTokenRoute: typeof ApiV1ProfilesTokenRoute
+  ApiV1WebLoginLookupRoute: typeof ApiV1WebLoginLookupRoute
+  ApiV1InvoicesIndexRoute: typeof ApiV1InvoicesIndexRoute
+  ApiV1WebLoginIndexRoute: typeof ApiV1WebLoginIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -341,6 +536,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/bootstrap': {
+      id: '/api/v1/bootstrap'
+      path: '/api/v1/bootstrap'
+      fullPath: '/api/v1/bootstrap'
+      preLoaderRoute: typeof ApiV1BootstrapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/catalog': {
+      id: '/api/v1/catalog'
+      path: '/api/v1/catalog'
+      fullPath: '/api/v1/catalog'
+      preLoaderRoute: typeof ApiV1CatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/devices': {
+      id: '/api/v1/devices'
+      path: '/api/v1/devices'
+      fullPath: '/api/v1/devices'
+      preLoaderRoute: typeof ApiV1DevicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/me': {
+      id: '/api/v1/me'
+      path: '/api/v1/me'
+      fullPath: '/api/v1/me'
+      preLoaderRoute: typeof ApiV1MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/store': {
+      id: '/api/v1/store'
+      path: '/api/v1/store'
+      fullPath: '/api/v1/store'
+      preLoaderRoute: typeof ApiV1StoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/sync': {
+      id: '/api/v1/sync'
+      path: '/api/v1/sync'
+      fullPath: '/api/v1/sync'
+      preLoaderRoute: typeof ApiV1SyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/wallet': {
+      id: '/api/v1/wallet'
+      path: '/api/v1/wallet'
+      fullPath: '/api/v1/wallet'
+      preLoaderRoute: typeof ApiV1WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_auth/app/invoices/': {
       id: '/_auth/app/invoices/'
       path: '/invoices'
@@ -368,6 +612,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/invoices/$invoiceId/pdf'
       preLoaderRoute: typeof ApiInvoicesInvoiceIdPdfRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/bills/$token': {
+      id: '/api/v1/bills/$token'
+      path: '/api/v1/bills/$token'
+      fullPath: '/api/v1/bills/$token'
+      preLoaderRoute: typeof ApiV1BillsTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/dev/otp': {
+      id: '/api/v1/dev/otp'
+      path: '/api/v1/dev/otp'
+      fullPath: '/api/v1/dev/otp'
+      preLoaderRoute: typeof ApiV1DevOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/invoices/': {
+      id: '/api/v1/invoices/'
+      path: '/api/v1/invoices'
+      fullPath: '/api/v1/invoices/'
+      preLoaderRoute: typeof ApiV1InvoicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/invoices/$invoiceId': {
+      id: '/api/v1/invoices/$invoiceId'
+      path: '/api/v1/invoices/$invoiceId'
+      fullPath: '/api/v1/invoices/$invoiceId'
+      preLoaderRoute: typeof ApiV1InvoicesInvoiceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/profiles/$token': {
+      id: '/api/v1/profiles/$token'
+      path: '/api/v1/profiles/$token'
+      fullPath: '/api/v1/profiles/$token'
+      preLoaderRoute: typeof ApiV1ProfilesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/web-login/': {
+      id: '/api/v1/web-login/'
+      path: '/api/v1/web-login'
+      fullPath: '/api/v1/web-login/'
+      preLoaderRoute: typeof ApiV1WebLoginIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/web-login/lookup': {
+      id: '/api/v1/web-login/lookup'
+      path: '/api/v1/web-login/lookup'
+      fullPath: '/api/v1/web-login/lookup'
+      preLoaderRoute: typeof ApiV1WebLoginLookupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/invoices/$invoiceId/credit-note': {
+      id: '/api/v1/invoices/$invoiceId/credit-note'
+      path: '/credit-note'
+      fullPath: '/api/v1/invoices/$invoiceId/credit-note'
+      preLoaderRoute: typeof ApiV1InvoicesInvoiceIdCreditNoteRouteImport
+      parentRoute: typeof ApiV1InvoicesInvoiceIdRoute
     }
   }
 }
@@ -426,13 +726,42 @@ const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
   GuestRouteRouteChildren,
 )
 
+interface ApiV1InvoicesInvoiceIdRouteChildren {
+  ApiV1InvoicesInvoiceIdCreditNoteRoute: typeof ApiV1InvoicesInvoiceIdCreditNoteRoute
+}
+
+const ApiV1InvoicesInvoiceIdRouteChildren: ApiV1InvoicesInvoiceIdRouteChildren =
+  {
+    ApiV1InvoicesInvoiceIdCreditNoteRoute:
+      ApiV1InvoicesInvoiceIdCreditNoteRoute,
+  }
+
+const ApiV1InvoicesInvoiceIdRouteWithChildren =
+  ApiV1InvoicesInvoiceIdRoute._addFileChildren(
+    ApiV1InvoicesInvoiceIdRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   GuestRouteRoute: GuestRouteRouteWithChildren,
   PrintInvoiceIdRoute: PrintInvoiceIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiV1BootstrapRoute: ApiV1BootstrapRoute,
+  ApiV1CatalogRoute: ApiV1CatalogRoute,
+  ApiV1DevicesRoute: ApiV1DevicesRoute,
+  ApiV1MeRoute: ApiV1MeRoute,
+  ApiV1StoreRoute: ApiV1StoreRoute,
+  ApiV1SyncRoute: ApiV1SyncRoute,
+  ApiV1WalletRoute: ApiV1WalletRoute,
   ApiInvoicesInvoiceIdPdfRoute: ApiInvoicesInvoiceIdPdfRoute,
+  ApiV1BillsTokenRoute: ApiV1BillsTokenRoute,
+  ApiV1DevOtpRoute: ApiV1DevOtpRoute,
+  ApiV1InvoicesInvoiceIdRoute: ApiV1InvoicesInvoiceIdRouteWithChildren,
+  ApiV1ProfilesTokenRoute: ApiV1ProfilesTokenRoute,
+  ApiV1WebLoginLookupRoute: ApiV1WebLoginLookupRoute,
+  ApiV1InvoicesIndexRoute: ApiV1InvoicesIndexRoute,
+  ApiV1WebLoginIndexRoute: ApiV1WebLoginIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

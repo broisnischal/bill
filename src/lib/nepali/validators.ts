@@ -30,3 +30,26 @@ export const fiscalYearSchema = z
   .string()
   .trim()
   .regex(/^2\d{3}\.0?\d{2,3}$/, "Use a fiscal year like 2082.083");
+
+/**
+ * A Nepali mobile in E.164, e.g. `+9779812345678`. Phone signup stores this form, so a
+ * number typed as `9812345678`, `098-1234 5678` or `+977 9812345678` is one account.
+ * Returns null when the number is not a Nepali mobile.
+ */
+export function normalizeNepaliMobile(value: string) {
+  const digits = value.replace(/\D/g, "");
+  const national = (digits.startsWith("977") ? digits.slice(3) : digits).replace(/^0+/, "");
+  return /^9\d{9}$/.test(national) ? `+977${national}` : null;
+}
+
+export const nepaliMobileSchema = z
+  .string()
+  .trim()
+  .transform((value, ctx) => {
+    const normalized = normalizeNepaliMobile(value);
+    if (!normalized) {
+      ctx.addIssue({ code: "custom", message: "Enter a 10-digit Nepali mobile number" });
+      return z.NEVER;
+    }
+    return normalized;
+  });

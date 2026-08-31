@@ -1,3 +1,4 @@
+import { phoneNumberClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
 import { env } from "#/env/client.ts";
@@ -12,4 +13,7 @@ import { env } from "#/env/client.ts";
  */
 export const authClient = createAuthClient({
   baseURL: env.VITE_BASE_URL,
+  // Mirrors the server's plugin list. Without it the client has no phoneNumber calls,
+  // which is how nearly everyone signs in.
+  plugins: [phoneNumberClient()],
 });

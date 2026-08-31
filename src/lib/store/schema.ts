@@ -94,6 +94,7 @@ export const itemSchema = z.object({
   description: optionalText(500),
   hsCode: optionalText(20),
   sku: optionalText(60),
+  barcode: optionalText(40),
   unit: z.string().trim().min(1).max(20).default("pcs"),
   unitPricePaisa: z.int().nonnegative(),
   vatApplicable: z.boolean().default(true),

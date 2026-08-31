@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LoaderCircleIcon } from "lucide-react";
 
+import { PhoneSignIn } from "#/components/phone-sign-in.tsx";
 import { SocialSignInButtons } from "#/components/sign-in-social-buttons.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import { Input } from "#/components/ui/input.tsx";
@@ -58,8 +59,21 @@ function LoginForm() {
     <div className="flex flex-col gap-6">
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">Enter your details to access your account.</p>
+        <p className="text-sm text-muted-foreground">Sign in with the number you bill from.</p>
       </div>
+
+      {/*
+        The phone is first because it is how nearly everyone signs in: a shopkeeper has a
+        mobile number long before an email address they check.
+      */}
+      <PhoneSignIn />
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">or with an email</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <form onSubmit={handleSubmit} aria-busy={isPending}>
         <div className="flex flex-col gap-6">
           <DeleteMeDemoAccount />

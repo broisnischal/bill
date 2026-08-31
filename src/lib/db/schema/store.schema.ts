@@ -150,6 +150,8 @@ export const item = pgTable(
     /** Harmonised System code, printed for goods where the buyer needs it. */
     hsCode: text("hs_code"),
     sku: text("sku"),
+    /** EAN-13, UPC-A or whatever the packet carries, as scanned off the product. */
+    barcode: text("barcode"),
     unit: text("unit").notNull().default("pcs"),
     unitPricePaisa: bigint("unit_price_paisa", { mode: "number" }).notNull().default(0),
     /** False for VAT-exempt goods listed in Schedule 1 of the VAT Act. */
@@ -164,5 +166,6 @@ export const item = pgTable(
   (table) => [
     index("item_store_idx").on(table.storeId),
     uniqueIndex("item_store_sku_uidx").on(table.storeId, table.sku),
+    uniqueIndex("item_store_barcode_uidx").on(table.storeId, table.barcode),
   ],
 );

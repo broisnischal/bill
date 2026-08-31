@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-import { optionalPanSchema } from "#/lib/nepali/validators.ts";
+import { fiscalYearSchema, optionalPanSchema } from "#/lib/nepali/validators.ts";
 
 import { lineInputSchema } from "./calc";
 
@@ -32,6 +32,50 @@ export const createInvoiceSchema = z.object({
 });
 
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
+
+/**
+ * A bill a till already printed, arriving from the device.
+ *
+ * Everything that was on the paper is fixed by the time we see it, so the identifiers,
+ * the number and the timestamps all come from the device and the server's job is to
+ * prove they are legitimate rather than to invent them. The declared total is included
+ * so a device whose arithmetic disagrees with ours is caught instead of silently
+ * overwritten: a customer is holding that piece of paper.
+ */
+export const deviceInvoiceSchema = createInvoiceSchema.extend({
+  /** Generated on the device, and the idempotency key for the whole push. */
+  id: z.uuid(),
+  shareToken: z.string().regex(/^[a-f0-9]{32}$/, "Malformed share token"),
+  leaseId: z.uuid(),
+  sequence: z.int().positive(),
+  fiscalYear: fiscalYearSchema,
+  /** The moment printed on the bill, and the moment the device queued it for sync. */
+  issuedAt: z.iso.datetime(),
+  queuedAt: z.iso.datetime(),
+  /** What the device printed as the grand total, in paisa. Checked, not trusted. */
+  totalPaisa: z.int().positive(),
+  /** What was handed over at the counter. Zero on a bill sold entirely on credit. */
+  paidAtIssuePaisa: z.int().nonnegative().default(0),
+  /** When the shop expects the rest, in Bikram Sambat. Credit sales only. */
+  dueMiti: z.string().trim().max(10).optional(),
+  /** Signed handle from a scanned customer card, so the bill reaches their own app. */
+  shopperLink: z.string().trim().max(200).optional(),
+});
+
+export type DeviceInvoiceInput = z.infer<typeof deviceInvoiceSchema>;
+
+/** Money received against a bill, recorded on the till and pushed on the next sync. */
+export const paymentSchema = z.object({
+  id: z.uuid(),
+  invoiceId: z.uuid(),
+  amountPaisa: z.int().positive("A payment has to be more than zero"),
+  method: z.enum(paymentMethods.map((method) => method.value)).default("cash"),
+  receivedAt: z.iso.datetime(),
+  miti: z.string().trim().max(10),
+  note: z.string().trim().max(200).optional(),
+});
+
+export type PaymentInput = z.infer<typeof paymentSchema>;
 
 export const cancelInvoiceSchema = z.object({
   invoiceId: z.string().min(1),

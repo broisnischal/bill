@@ -5,13 +5,13 @@ import * as z from "zod";
 
 import { authMiddleware } from "#/lib/auth/middleware.ts";
 import { db } from "#/lib/db/index.ts";
-import { customer, item, store, storeMember } from "#/lib/db/schema/index.ts";
+import { customer, item, store } from "#/lib/db/schema/index.ts";
 import { encryptSecret } from "#/lib/ird/credentials.ts";
 import { bsStringToAd, toAdDateString } from "#/lib/nepali/date.ts";
 
 import { storeAdminMiddleware, storeMiddleware } from "./middleware";
 import { customerSchema, itemSchema, storeRegistrationSchema, storeSettingsSchema } from "./schema";
-import { findStoreForUser } from "./service";
+import { findStoreForUser, registerStore, StoreRegistrationError } from "./service";
 
 /** The caller's business, or null when they still have to register one. */
 export const $getMyStore = createServerFn({ method: "GET" })
@@ -26,50 +26,15 @@ export const $createStore = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(storeRegistrationSchema)
   .handler(async ({ data, context }) => {
-    const existing = await findStoreForUser(context.user.id);
-    if (existing) {
-      setResponseStatus(409);
-      throw new Error("This account already has a registered business");
+    try {
+      return await registerStore({ userId: context.user.id, input: data });
+    } catch (error) {
+      if (error instanceof StoreRegistrationError) {
+        setResponseStatus(409);
+        throw new Error(error.message);
+      }
+      throw error;
     }
-
-    const [taken] = await db.select({ id: store.id }).from(store).where(eq(store.pan, data.pan));
-    if (taken) {
-      setResponseStatus(409);
-      throw new Error(`PAN ${data.pan} is already registered on this platform`);
-    }
-
-    return db.transaction(async (tx) => {
-      const [created] = await tx
-        .insert(store)
-        .values({
-          ownerId: context.user.id,
-          name: data.name,
-          nameNepali: data.nameNepali,
-          tradeName: data.tradeName,
-          pan: data.pan,
-          taxpayerType: data.taxpayerType,
-          registrationDate: toAdDateString(bsStringToAd(data.registrationDateBs)),
-          registrationDateBs: data.registrationDateBs,
-          registrationNumber: data.registrationNumber,
-          businessType: data.businessType,
-          taxOffice: data.taxOffice,
-          address: data.address,
-          ward: data.ward,
-          municipality: data.municipality,
-          district: data.district,
-          province: data.province,
-          phone: data.phone,
-          email: data.email,
-          website: data.website,
-        })
-        .returning();
-
-      await tx
-        .insert(storeMember)
-        .values({ storeId: created.id, userId: context.user.id, role: "owner" });
-
-      return { store: created, role: "owner" as const };
-    });
   });
 
 export const $updateStore = createServerFn({ method: "POST" })

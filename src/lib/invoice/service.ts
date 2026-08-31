@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 import { and, eq, sql } from "drizzle-orm";
 
+import { readShopperLink } from "#/lib/api/cards.ts";
 import { db } from "#/lib/db/index.ts";
 import {
   customer,
@@ -8,6 +9,7 @@ import {
   invoiceAudit,
   invoiceCounter,
   invoiceItem,
+  invoicePayment,
   store as storeTable,
 } from "#/lib/db/schema/index.ts";
 import type { AuditAction, AuditMeta, InvoiceType, PrintFormat } from "#/lib/db/schema/types.ts";
@@ -18,8 +20,9 @@ import { amountInWords } from "#/lib/nepali/money.ts";
 import { invoicePdfKey, putPdf } from "#/lib/storage/s3.ts";
 
 import { ABBREVIATED_INVOICE_LIMIT_PAISA, computeInvoice } from "./calc";
+import { consumeLeasedSequence } from "./lease";
 import { renderInvoicePdf } from "./pdf";
-import type { CreateInvoiceInput } from "./schema";
+import type { CreateInvoiceInput, DeviceInvoiceInput, PaymentInput } from "./schema";
 
 type Store = typeof storeTable.$inferSelect;
 type Invoice = typeof invoice.$inferSelect;
@@ -40,7 +43,7 @@ export interface Actor {
  * and every one of those events lands in the audit trail.
  */
 
-function formatInvoiceNumber({
+export function formatInvoiceNumber({
   prefix,
   fiscalYear,
   invoiceType,
@@ -252,6 +255,199 @@ export async function createInvoice({
   });
 
   return archived ?? created;
+}
+
+/**
+ * Raised when a bill a device already printed does not add up the way the server adds it
+ * up. The paper cannot be recalled, so the push is refused and the shop is told to
+ * reverse the bill with a credit note rather than have two versions of one document.
+ */
+export class InvoiceIntegrityError extends Error {
+  constructor(
+    message: string,
+    readonly detail: Record<string, string | number>,
+  ) {
+    super(message);
+    this.name = "InvoiceIntegrityError";
+  }
+}
+
+/**
+ * Files a bill a till already printed from a leased number.
+ *
+ * Nothing here is allowed to change what the customer is holding, so the number, the id,
+ * the share token and the timestamps all arrive from the device. What the server does is
+ * check them: that the number came from a block this device holds, that the totals match
+ * a fresh calculation, and that the bill has not already been filed. Pushing the same
+ * bill twice is a no-op, which is what lets the device retry a sync as often as it likes.
+ */
+export async function createLeasedInvoice({
+  store,
+  actor,
+  deviceId,
+  input,
+  now = new Date(),
+}: {
+  store: Store;
+  actor: Actor;
+  deviceId: string;
+  input: DeviceInvoiceInput;
+  now?: Date;
+}) {
+  const [existing] = await db.select().from(invoice).where(eq(invoice.id, input.id));
+  if (existing) {
+    if (existing.storeId !== store.id) throw new Error("That bill belongs to another store");
+    return { invoice: existing, filed: false as const };
+  }
+
+  const issuedAt = new Date(input.issuedAt);
+  const vatRateBp = store.taxpayerType === "vat" ? store.vatRateBp : 0;
+  const totals = computeInvoice({
+    lines: input.lines,
+    invoiceDiscountPaisa: input.discountPaisa,
+    vatRateBp,
+  });
+
+  if (totals.totalPaisa !== input.totalPaisa) {
+    throw new InvoiceIntegrityError("The printed total does not match what the bill adds up to", {
+      printedPaisa: input.totalPaisa,
+      computedPaisa: totals.totalPaisa,
+    });
+  }
+  if (fiscalYearFor(issuedAt) !== input.fiscalYear) {
+    throw new InvoiceIntegrityError(
+      "The bill date does not fall in the fiscal year it was numbered in",
+      {
+        miti: toBsString(issuedAt),
+        printedFiscalYear: input.fiscalYear,
+        actualFiscalYear: fiscalYearFor(issuedAt),
+      },
+    );
+  }
+  if (
+    input.invoiceType === "abbreviated_tax_invoice" &&
+    totals.totalPaisa > ABBREVIATED_INVOICE_LIMIT_PAISA
+  ) {
+    throw new InvoiceIntegrityError("An abbreviated tax invoice cannot exceed NPR 10,000", {
+      totalPaisa: totals.totalPaisa,
+    });
+  }
+
+  const invoiceNumber = formatInvoiceNumber({
+    prefix: store.invoicePrefix,
+    fiscalYear: input.fiscalYear,
+    invoiceType: input.invoiceType,
+    sequence: input.sequence,
+  });
+
+  const created = await db.transaction(async (tx) => {
+    await consumeLeasedSequence(tx, {
+      leaseId: input.leaseId,
+      deviceId,
+      storeId: store.id,
+      fiscalYear: input.fiscalYear,
+      invoiceType: input.invoiceType,
+      sequence: input.sequence,
+      now,
+    });
+
+    let customerId = input.customerId;
+    if (!customerId && input.saveCustomer) {
+      const [saved] = await tx
+        .insert(customer)
+        .values({
+          storeId: store.id,
+          name: input.buyerName,
+          pan: input.buyerPan,
+          address: input.buyerAddress,
+          phone: input.buyerPhone,
+        })
+        .returning({ id: customer.id });
+      customerId = saved.id;
+    }
+
+    const [row] = await tx
+      .insert(invoice)
+      .values({
+        id: input.id,
+        shareToken: input.shareToken,
+        storeId: store.id,
+        fiscalYear: input.fiscalYear,
+        invoiceType: input.invoiceType,
+        sequence: input.sequence,
+        invoiceNumber,
+        deviceId,
+        leaseId: input.leaseId,
+        queuedAt: new Date(input.queuedAt),
+        customerId,
+        // A forged or stale link simply does not name anyone; it never fails the bill.
+        shopperUserId: input.shopperLink ? readShopperLink(input.shopperLink) : null,
+        buyerName: input.buyerName,
+        buyerPan: input.buyerPan,
+        buyerAddress: input.buyerAddress,
+        buyerPhone: input.buyerPhone,
+        issuedAt,
+        miti: toBsString(issuedAt),
+        subTotalPaisa: totals.subTotalPaisa,
+        discountPaisa: totals.discountPaisa,
+        taxableAmountPaisa: totals.taxableAmountPaisa,
+        nonTaxableAmountPaisa: totals.nonTaxableAmountPaisa,
+        vatRateBp,
+        vatAmountPaisa: totals.vatAmountPaisa,
+        totalPaisa: totals.totalPaisa,
+        amountInWords: amountInWords(totals.totalPaisa),
+        paymentMethod: input.paymentMethod,
+        paidAtIssuePaisa: Math.min(input.paidAtIssuePaisa, totals.totalPaisa),
+        dueMiti: input.dueMiti,
+        notes: input.notes,
+        enteredById: actor.id,
+        enteredByName: actor.name,
+        // CBMS distinguishes a bill that reached it as it was issued from one that was
+        // queued on a till with no network, so the gap decides rather than a client flag.
+        isRealtime: now.getTime() - issuedAt.getTime() < 60_000,
+        irdSyncStatus:
+          store.cbmsEnabled && store.taxpayerType === "vat" ? "pending" : "not_applicable",
+      })
+      .returning();
+
+    await tx.insert(invoiceItem).values(
+      totals.lines.map((line) => ({
+        invoiceId: row.id,
+        lineNo: line.lineNo,
+        itemId: line.itemId,
+        description: line.description,
+        hsCode: line.hsCode,
+        unit: line.unit,
+        quantityMilli: line.quantityMilli,
+        unitPricePaisa: line.unitPricePaisa,
+        discountPaisa: line.discountPaisa,
+        vatApplicable: line.vatApplicable,
+        lineTotalPaisa: line.lineTotalPaisa,
+      })),
+    );
+
+    await recordAudit(tx, {
+      invoiceId: row.id,
+      storeId: store.id,
+      action: "invoice_created",
+      actor,
+      meta: {
+        totalPaisa: row.totalPaisa,
+        lines: totals.lines.length,
+        deviceId,
+        offlineForMs: now.getTime() - new Date(input.queuedAt).getTime(),
+      },
+    });
+
+    return row;
+  });
+
+  const archived = await archiveInvoicePdf({ store, invoiceId: created.id, actor });
+  void syncInvoiceToIrd({ store, invoiceId: created.id }).catch(() => {
+    // Recorded on the row and retried. Billing never blocks on CBMS.
+  });
+
+  return { invoice: archived ?? created, filed: true as const };
 }
 
 export async function loadInvoiceForPrint({
@@ -591,3 +787,79 @@ export async function pendingIrdInvoices(storeId: string, limit = 50) {
 }
 
 export type InvoiceRow = Invoice;
+
+/**
+ * Records money received against a bill.
+ *
+ * The bill itself is never touched: what is owed is the total less what was paid at the
+ * counter less the payments filed here, so a ledger can always be rebuilt from rows that
+ * were only ever inserted. Recording the same payment twice is a no-op, which is what
+ * lets a till retry a sync.
+ */
+export async function recordPayment({
+  store,
+  actor,
+  input,
+  deviceId,
+}: {
+  store: Store;
+  actor: Actor;
+  input: PaymentInput;
+  deviceId?: string;
+}) {
+  const [bill] = await db
+    .select()
+    .from(invoice)
+    .where(and(eq(invoice.id, input.invoiceId), eq(invoice.storeId, store.id)));
+  if (!bill) throw new Error("That bill is not in this store");
+  if (bill.status === "cancelled") throw new Error("A cancelled bill cannot take a payment");
+
+  const [existing] = await db
+    .select({ id: invoicePayment.id })
+    .from(invoicePayment)
+    .where(eq(invoicePayment.id, input.id));
+  if (existing) return { payment: existing, filed: false as const };
+
+  const outstanding = await outstandingFor(bill);
+  if (input.amountPaisa > outstanding) {
+    throw new Error(
+      `That is more than the ${(outstanding / 100).toFixed(2)} still owed on this bill`,
+    );
+  }
+
+  const [payment] = await db
+    .insert(invoicePayment)
+    .values({
+      id: input.id,
+      invoiceId: input.invoiceId,
+      storeId: store.id,
+      amountPaisa: input.amountPaisa,
+      method: input.method,
+      receivedAt: new Date(input.receivedAt),
+      miti: input.miti,
+      note: input.note,
+      recordedById: actor.id,
+      deviceId,
+    })
+    .returning();
+
+  await recordAudit(db, {
+    invoiceId: bill.id,
+    storeId: store.id,
+    action: "payment_received",
+    actor,
+    meta: { amountPaisa: input.amountPaisa, method: input.method },
+  });
+
+  return { payment, filed: true as const };
+}
+
+/** What is still owed on a bill: its total, less the counter payment, less what came in. */
+export async function outstandingFor(bill: Invoice) {
+  if (bill.status === "cancelled") return 0;
+  const [received] = await db
+    .select({ total: sql<number>`coalesce(sum(${invoicePayment.amountPaisa}), 0)::int` })
+    .from(invoicePayment)
+    .where(eq(invoicePayment.invoiceId, bill.id));
+  return bill.totalPaisa - bill.paidAtIssuePaisa - (received?.total ?? 0);
+}
