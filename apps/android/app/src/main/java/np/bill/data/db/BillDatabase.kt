@@ -28,8 +28,9 @@ data class BillWithDue(
     ItemEntity::class,
     CustomerEntity::class,
     WalletBillEntity::class,
+    PaymentQrEntity::class,
   ],
-  version = 6,
+  version = 8,
   exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -39,6 +40,7 @@ abstract class BillDatabase : RoomDatabase() {
   abstract fun catalog(): CatalogDao
   abstract fun wallet(): WalletDao
   abstract fun storeData(): StoreDataDao
+  abstract fun paymentQrs(): PaymentQrDao
 
   companion object {
     /**
@@ -65,6 +67,40 @@ abstract class BillDatabase : RoomDatabase() {
      * on the list only invites someone to try to fix it. Matched by the server's own
      * words, and only where the bill never synced — anything the office accepted stays.
      */
+    /**
+     * The shop's own payment QRs, so the counter can take digital payment without the
+     * customer asking for a number to type. Additive: an existing database gains an
+     * empty table and every bill in it is untouched.
+     */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+      override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+          """
+          CREATE TABLE IF NOT EXISTS payment_qr (
+            id TEXT NOT NULL PRIMARY KEY,
+            method TEXT NOT NULL,
+            label TEXT,
+            imagePath TEXT NOT NULL,
+            savedAt INTEGER NOT NULL
+          )
+          """.trimIndent(),
+        )
+        db.execSQL(
+          "CREATE UNIQUE INDEX IF NOT EXISTS index_payment_qr_method ON payment_qr (method)",
+        )
+      }
+    }
+
+    /**
+     * A payment QR remembers what it says, so a code that was scanned or typed can be
+     * redrawn crisply instead of kept as someone's photograph of a card.
+     */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+      override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE payment_qr ADD COLUMN payload TEXT")
+      }
+    }
+
     val MIGRATION_5_6 = object : Migration(5, 6) {
       override fun migrate(db: SupportSQLiteDatabase) {
         val orphaned = """

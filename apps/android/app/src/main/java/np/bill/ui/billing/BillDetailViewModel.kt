@@ -38,7 +38,14 @@ data class BillDetailState(
 )
 
 /** The base a scanned QR resolves against. Customer mode also accepts the bare token. */
-private const val SHARE_BASE = "https://bill.np/b/"
+/**
+ * Where a scanned or shared bill resolves.
+ *
+ * Built from the server this build talks to, not written out again: a QR printed on a
+ * customer's receipt outlives the till, and one carrying a hostname that answers nothing
+ * is a bill the buyer can never open.
+ */
+private val SHARE_BASE = np.bill.BuildConfig.API_BASE_URL.trimEnd('/') + "/b/"
 
 @HiltViewModel
 class BillDetailViewModel @Inject constructor(

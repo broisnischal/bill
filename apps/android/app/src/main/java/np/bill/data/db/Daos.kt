@@ -282,3 +282,21 @@ interface WalletDao {
   @Query("DELETE FROM wallet_bill WHERE shareToken = :token")
   suspend fun remove(token: String)
 }
+
+@Dao
+interface PaymentQrDao {
+  @Query("SELECT * FROM payment_qr ORDER BY savedAt")
+  fun observeAll(): Flow<List<PaymentQrEntity>>
+
+  @Query("SELECT * FROM payment_qr ORDER BY savedAt")
+  suspend fun all(): List<PaymentQrEntity>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun upsert(row: PaymentQrEntity)
+
+  @Query("DELETE FROM payment_qr WHERE id = :id")
+  suspend fun delete(id: String)
+
+  @Query("DELETE FROM payment_qr")
+  suspend fun clearAll()
+}

@@ -29,6 +29,7 @@ class BillingRepository @Inject constructor(
   private val bills: BillDao,
   private val leases: LeaseDao,
   private val session: SessionStore,
+  private val catalog: CatalogRepository,
 ) {
 
   /** Why a bill could not be written. Each one is something the shopkeeper can act on. */
@@ -139,6 +140,27 @@ class BillingRepository @Inject constructor(
     }
 
     bills.insertBill(bill, lines)
+
+    // A line typed by hand becomes a product, so the second time it is sold it is one tap.
+    // Only lines with no item behind them: picking an existing product must never write a
+    // duplicate, and a one-off line the shop priced for a single customer is still worth
+    // keeping, because the price is the part nobody remembers a month later.
+    if (session.current().autoSaveProduct) {
+      lines.filter { it.itemId == null && it.description.isNotBlank() }
+        .distinctBy { it.description.trim().lowercase() }
+        .forEach { line ->
+          runCatching {
+            catalog.saveItem(
+              name = line.description.trim(),
+              unitPricePaisa = line.unitPricePaisa,
+              unit = line.unit,
+              vatApplicable = line.vatApplicable,
+              hsCode = line.hsCode,
+            )
+          }
+        }
+    }
+
     return Result.Written(bill)
   }
 

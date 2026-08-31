@@ -54,16 +54,26 @@ class AuthRepository @Inject constructor(
       ?: return ApiResult.Failed("no_user", "Sign-in did not complete. Try again.", 200)
 
     session.signIn(token, user)
+
+    // Pick up the shop in the same breath as the session. Nothing else asks for it until
+    // the app is next launched, so without this a shopkeeper who already has a store
+    // signs in and is sent straight to the registration form, which then refuses them
+    // because the store they are being asked to create is already there.
+    runCatching { bootstrap() }
+
     return ApiResult.Ok(Unit)
   }
 
   /**
-   * The code a local server logged instead of sending, so signing in during development
-   * does not need an SMS account. Compiled out of release builds, and the route it calls
-   * does not answer on a server that has a gateway configured.
+   * The code the server held instead of sending it, so signing in needs no SMS account.
+   *
+   * Gated on its own flag rather than on the debug build, because the builds being handed
+   * round for people to try are release builds against the real server and they still have
+   * no gateway behind them. The route answers only while that server keeps OTP_DEBUG on,
+   * so turning the server flag off disables this everywhere at once.
    */
   suspend fun devOtp(phoneNumber: String): String? {
-    if (!np.bill.BuildConfig.DEBUG) return null
+    if (!np.bill.BuildConfig.OTP_AUTOFILL) return null
     return runCatching { api.devOtp(phoneNumber).body()?.code }.getOrNull()
   }
 

@@ -192,3 +192,30 @@ data class WalletBillEntity(
   val payloadJson: String,
   val savedAt: Long = System.currentTimeMillis(),
 )
+
+/**
+ * A payment QR the shop already has, photographed once and shown at the counter.
+ *
+ * The image is the shop's own: the one printed on the card beside the till, or the one
+ * eSewa and Khalti generate in their merchant apps. Storing a picture rather than
+ * building the code ourselves is deliberate. A QR that moves money carries a merchant
+ * identifier issued by the payment provider, and one assembled from guesses would scan
+ * cleanly and pay nobody.
+ */
+@Entity(tableName = "payment_qr", indices = [Index("method", unique = true)])
+data class PaymentQrEntity(
+  @PrimaryKey val id: String,
+  /** One of PaymentQrMethod. Stored as a name so an unknown one survives a downgrade. */
+  val method: String,
+  /** What the shop calls it, when the method's own name is not enough. */
+  val label: String?,
+  /** File inside the app's own storage. The picked image is copied, never referenced. */
+  val imagePath: String,
+  /**
+   * What the code says, when it is known: scanned off the shop's own printed QR, or
+   * built from the number they typed. Null for a QR that only exists as a photograph,
+   * which is the one case where the picture is the original and cannot be redrawn.
+   */
+  val payload: String? = null,
+  val savedAt: Long,
+)

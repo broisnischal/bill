@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -64,6 +65,7 @@ fun HomeScreen(
   onSettings: () -> Unit,
   onDues: () -> Unit,
   onBills: () -> Unit,
+  onShowQr: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val tokens = LocalTokens.current
@@ -123,6 +125,33 @@ fun HomeScreen(
         stringResource(R.string.new_bill),
         style = MaterialTheme.typography.headlineSmall,
         color = MaterialTheme.colorScheme.onPrimary,
+      )
+    }
+
+    Spacer(Modifier.height(12.dp))
+
+    // The other half of a sale. Full width and next to the bill, because the shop reaches
+    // for it in the same breath: bill made, now take the money.
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(Radius.large))
+        .background(MaterialTheme.colorScheme.surfaceContainer)
+        .border(1.dp, tokens.border, RoundedCornerShape(Radius.large))
+        .clickable(onClick = onShowQr)
+        .padding(horizontal = 20.dp, vertical = 18.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Icon(
+        Icons.Filled.QrCode2,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.size(24.dp),
+      )
+      Spacer(Modifier.size(12.dp))
+      Text(
+        stringResource(R.string.qr_show),
+        style = MaterialTheme.typography.titleMedium,
       )
     }
 

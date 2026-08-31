@@ -275,4 +275,30 @@
     <string name="web_login_approve">Let it in</string>
     <string name="web_login_deny">Not me</string>
     <string name="web_login_done">The computer is signed in.</string>
+  <!-- Payment QR -->
+  <string name="qr_show">Show QR</string>
+  <string name="qr_which">Which one?</string>
+  <string name="qr_amount">Rs %1$s to collect</string>
+  <string name="qr_none_saved">No payment QR saved yet.</string>
+  <string name="qr_add">Add a payment QR</string>
+  <string name="qr_add_short">Add</string>
+  <string name="qr_replace">Replace</string>
+  <string name="qr_remove">Remove</string>
+  <string name="qr_saved">Saved</string>
+  <string name="qr_not_set">Not set</string>
+  <string name="qr_tap_to_close">Tap anywhere to close</string>
+  <string name="qr_settings_hint">Photograph the QR your shop already shows, or pick it from the gallery. It is stored on this phone and shown full screen when a customer wants to pay.</string>
+  <string name="qr_payments">Payment QR</string>
+  <string name="qr_fonepay">FonePay</string>
+  <string name="qr_esewa">eSewa</string>
+  <string name="qr_khalti">Khalti</string>
+  <string name="qr_bank">Bank</string>
+  <string name="qr_add_for">Add %1$s code</string>
+  <string name="qr_add_hint">Scanning the code your shop already shows keeps exactly what the payment app put in it, which is the version that reliably takes money.</string>
+  <string name="qr_add_scan">Scan the code</string>
+  <string name="qr_add_number">Type the number</string>
+  <string name="qr_add_photo">Pick a photo</string>
+  <string name="qr_number_title">%1$s number</string>
+  <string name="qr_number_label">Mobile or merchant ID</string>
+  <string name="qr_number_hint">A code drawn from a number carries the number and nothing else. Some apps open straight into a payment; others just read it back as text. Scanning your own code avoids the guess.</string>
 </resources>

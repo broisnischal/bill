@@ -73,9 +73,10 @@ class SyncRepository @Inject constructor(
     val fiscalYear = BsCalendar.fiscalYearFor(now)
 
     val duePayments = bills.pendingPayments()
+    val autoSaveCustomer = current.autoSaveCustomer
 
     val request = SyncRequest(
-      invoices = pending.map { toDto(it, bills.linesOf(it.id)) },
+      invoices = pending.map { toDto(it, bills.linesOf(it.id), autoSaveCustomer) },
       payments = duePayments.map {
         PaymentDto(
           id = it.id,
@@ -198,7 +199,11 @@ class SyncRepository @Inject constructor(
     }
   }
 
-  private fun toDto(bill: BillEntity, lines: List<np.bill.data.db.BillLineEntity>) =
+  private fun toDto(
+    bill: BillEntity,
+    lines: List<np.bill.data.db.BillLineEntity>,
+    autoSaveCustomer: Boolean,
+  ) =
     DeviceInvoiceDto(
       id = bill.id,
       shareToken = bill.shareToken,
@@ -217,7 +222,10 @@ class SyncRepository @Inject constructor(
       paymentMethod = bill.paymentMethod,
       notes = bill.notes,
       discountPaisa = bill.discountPaisa,
-      saveCustomer = bill.customerId == null && !bill.buyerPhone.isNullOrBlank(),
+      // Honours the shop's setting rather than guessing from whether a phone was typed:
+      // a regular who always pays cash and never gives a number was invisible to the old
+      // rule, which is exactly the customer a shop most wants on the list.
+      saveCustomer = bill.customerId == null && bill.buyerName.isNotBlank() && autoSaveCustomer,
       lines = lines.map {
         LineDto(
           itemId = it.itemId,

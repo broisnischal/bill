@@ -2,6 +2,7 @@ package np.bill.print
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
@@ -28,7 +29,7 @@ import kotlinx.coroutines.withContext
 @Singleton
 class ThermalPrinter @Inject constructor(@ApplicationContext private val context: Context) {
 
-  data class Printer(val name: String, val address: String)
+  data class Printer(val name: String, val address: String, val likelyPrinter: Boolean = true)
 
   sealed interface Outcome {
     data object Printed : Outcome
@@ -47,25 +48,42 @@ class ThermalPrinter @Inject constructor(@ApplicationContext private val context
     true
   }
 
-  /** Printers already paired in Android settings. Pairing itself is the system's job. */
+  /**
+   * Devices already paired in Android settings, printers first. Pairing itself is the
+   * system's job.
+   *
+   * Nothing is filtered out. A cheap 58mm roll printer reports whatever class its
+   * firmware felt like, often misc or peripheral rather than imaging, and excluding on
+   * that basis meant a printer the shop had already paired simply never appeared in the
+   * list, with nothing on screen to say why. Ranking keeps the likely one at the top and
+   * still lets someone pick the device that got classified oddly.
+   */
   @SuppressLint("MissingPermission")
   fun paired(): List<Printer> {
     if (!hasPermission()) return emptyList()
     val bonded = runCatching { adapter?.bondedDevices }.getOrNull().orEmpty()
     return bonded
-      .filter(::looksLikePrinter)
-      .map { Printer(it.name ?: it.address, it.address) }
+      .map { Printer(it.name ?: it.address, it.address, looksLikePrinter(it)) }
+      .sortedWith(compareByDescending<Printer> { it.likelyPrinter }.thenBy { it.name })
   }
 
+  /** True when Bluetooth exists but is switched off, which reads as "no printers" otherwise. */
+  fun bluetoothOff(): Boolean = adapter?.isEnabled == false
+
   /**
-   * Bluetooth device classes: 1536 is an imaging device, and the printer minor class is
-   * what receipt printers report. Anything unclassified is offered too, since the cheap
-   * imports often report nothing useful.
+   * Whether a paired device is probably the roll printer, used to order the list rather
+   * than to exclude anything. Imaging and uncategorised are the classes a receipt printer
+   * usually reports; the name is checked too, because plenty report neither.
    */
   @SuppressLint("MissingPermission")
   private fun looksLikePrinter(device: BluetoothDevice): Boolean = runCatching {
     val major = device.bluetoothClass?.majorDeviceClass
-    major == 1536 || major == 7936 || major == null
+    val byClass = major == BluetoothClass.Device.Major.IMAGING ||
+      major == BluetoothClass.Device.Major.UNCATEGORIZED ||
+      major == null
+    val name = device.name.orEmpty().lowercase()
+    val byName = PRINTER_NAME_HINTS.any { it in name }
+    byClass || byName
   }.getOrDefault(true)
 
   @SuppressLint("MissingPermission")
@@ -104,6 +122,9 @@ class ThermalPrinter @Inject constructor(@ApplicationContext private val context
   }
 
   private companion object {
+    /** What the cheap imports tend to call themselves. Used for ordering, never to exclude. */
+    val PRINTER_NAME_HINTS = listOf("print", "pos", "ptr", "rp", "mtp", "thermal", "58", "80")
+
     /** The serial port profile every ESC/POS printer advertises. */
     val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     const val CHUNK = 2048

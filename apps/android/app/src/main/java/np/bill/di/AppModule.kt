@@ -43,6 +43,8 @@ object AppModule {
         BillDatabase.MIGRATION_3_4,
         BillDatabase.MIGRATION_4_5,
         BillDatabase.MIGRATION_5_6,
+        BillDatabase.MIGRATION_6_7,
+        BillDatabase.MIGRATION_7_8,
       )
       .build()
 

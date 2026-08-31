@@ -25,6 +25,9 @@ import np.bill.ui.billing.BillsScreen
 import np.bill.ui.catalog.CustomersScreen
 import np.bill.ui.catalog.ItemsScreen
 import np.bill.ui.home.HomeScreen
+import np.bill.ui.payments.PaymentQrScreen
+import np.bill.ui.payments.PaymentQrViewModel
+import np.bill.ui.payments.ShowQrSheet
 import np.bill.ui.dues.DuesScreen
 import np.bill.ui.reports.ReportsScreen
 import np.bill.ui.settings.BusinessSettingsScreen
@@ -53,6 +56,26 @@ fun BusinessHome(
   var addProduct by remember { mutableStateOf(false) }
   var addCustomer by remember { mutableStateOf(false) }
   var morePage by rememberSaveable { mutableStateOf(MorePage.HUB) }
+  var showQr by remember { mutableStateOf(false) }
+
+  // The sheet is hoisted here rather than inside the home tab: a shopkeeper reaches for
+  // it while a customer is standing there, and losing it because a tab changed
+  // underneath would mean starting again with the person still waiting.
+  val paymentQr: PaymentQrViewModel = hiltViewModel()
+  val paymentQrState by paymentQr.state.collectAsStateWithLifecycle()
+
+  if (showQr) {
+    ShowQrSheet(
+      saved = paymentQrState.saved,
+      amountPaisa = null,
+      onDismiss = { showQr = false },
+      onManage = {
+        showQr = false
+        selected = Tabs.more.route
+        morePage = MorePage.PAYMENT_QR
+      },
+    )
+  }
 
   // Leaving the More tab puts it back at the hub, so returning never lands mid-form.
   LaunchedEffect(selected) { if (selected != Tabs.more.route) morePage = MorePage.HUB }
@@ -83,6 +106,7 @@ fun BusinessHome(
       MorePage.BUSINESS -> stringResource(R.string.business_settings)
       MorePage.PREFERENCES -> stringResource(R.string.settings)
       MorePage.WEB_LOGIN -> stringResource(R.string.web_login)
+      MorePage.PAYMENT_QR -> stringResource(R.string.qr_payments)
       MorePage.HUB -> stringResource(R.string.nav_more)
     }
     else -> state.storeName.ifBlank { stringResource(R.string.app_name) }
@@ -131,6 +155,7 @@ fun BusinessHome(
           morePage = MorePage.DUES
         },
         onBills = { selected = Tabs.bills.route },
+        onShowQr = { showQr = true },
         modifier = modifier,
       )
       Tabs.products.route -> ItemsScreen(
@@ -156,6 +181,7 @@ fun BusinessHome(
           onDone = { morePage = MorePage.HUB },
           modifier = modifier,
         )
+        MorePage.PAYMENT_QR -> PaymentQrScreen(modifier = modifier)
         MorePage.PREFERENCES -> SettingsScreen(
           onSwitchMode = onSwitchMode,
           onSignedOut = onSignedOut,
@@ -167,6 +193,7 @@ fun BusinessHome(
           onBusiness = { morePage = MorePage.BUSINESS },
           onPreferences = { morePage = MorePage.PREFERENCES },
           onWebLogin = { morePage = MorePage.WEB_LOGIN },
+          onPaymentQr = { morePage = MorePage.PAYMENT_QR },
           duesPaisa = state.duePaisa,
           modifier = modifier,
         )
@@ -183,4 +210,4 @@ fun BusinessHome(
 }
 
 /** Where the More tab currently is. It is a small stack, not a second navigation graph. */
-private enum class MorePage { HUB, DUES, REPORTS, BUSINESS, PREFERENCES, WEB_LOGIN }
+private enum class MorePage { HUB, DUES, REPORTS, BUSINESS, PREFERENCES, WEB_LOGIN, PAYMENT_QR }

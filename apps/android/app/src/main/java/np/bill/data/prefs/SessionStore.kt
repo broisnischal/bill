@@ -46,6 +46,17 @@ data class Session(
   val printerAddress: String?,
   val printerName: String?,
   val themeMode: np.bill.ui.theme.ThemeMode,
+  /**
+   * Whether a buyer typed straight onto a bill joins the customer list, and whether a
+   * line typed by hand becomes a product.
+   *
+   * On by default. A shop that bills the same faces every week ends up retyping them
+   * otherwise, and the catalogue that makes the next bill fast is exactly the one nobody
+   * stops to build. Off is for the counter that serves mostly strangers, where saving
+   * every walk-in buries the regulars.
+   */
+  val autoSaveCustomer: Boolean,
+  val autoSaveProduct: Boolean,
 ) {
   val signedIn: Boolean get() = !token.isNullOrEmpty()
   val hasStore: Boolean get() = store != null
@@ -94,6 +105,8 @@ class SessionStore @Inject constructor(
       themeMode = prefs[THEME]?.let {
         runCatching { np.bill.ui.theme.ThemeMode.valueOf(it) }.getOrNull()
       } ?: np.bill.ui.theme.ThemeMode.SYSTEM,
+      autoSaveCustomer = prefs[AUTO_SAVE_CUSTOMER] ?: true,
+      autoSaveProduct = prefs[AUTO_SAVE_PRODUCT] ?: true,
     )
   }.onEach { cached = it }
 
@@ -146,6 +159,14 @@ class SessionStore @Inject constructor(
    * series. This value survives sign-out precisely so that comparison still works.
    */
   suspend fun lastStoreId(): String? = context.dataStore.data.first()[LAST_STORE_ID]
+
+  suspend fun setAutoSaveCustomer(enabled: Boolean) {
+    context.dataStore.edit { it[AUTO_SAVE_CUSTOMER] = enabled }
+  }
+
+  suspend fun setAutoSaveProduct(enabled: Boolean) {
+    context.dataStore.edit { it[AUTO_SAVE_PRODUCT] = enabled }
+  }
 
   suspend fun setThemeMode(mode: np.bill.ui.theme.ThemeMode) {
     context.dataStore.edit { it[THEME] = mode.name }
@@ -203,5 +224,7 @@ class SessionStore @Inject constructor(
     val PRINTER = stringPreferencesKey("printer")
     val PRINTER_NAME = stringPreferencesKey("printer_name")
     val THEME = stringPreferencesKey("theme")
+    val AUTO_SAVE_CUSTOMER = booleanPreferencesKey("auto_save_customer")
+    val AUTO_SAVE_PRODUCT = booleanPreferencesKey("auto_save_product")
   }
 }

@@ -41,12 +41,23 @@ android {
       // `adb reverse tcp:3000 tcp:3000` puts the dev server on the phone's own localhost,
       // so a USB-connected handset and an emulator both use the same URL.
       buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
+      buildConfigField("Boolean", "OTP_AUTOFILL", "true")
     }
     release {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      buildConfigField("String", "API_BASE_URL", "\"https://bill.np/\"")
+      buildConfigField("String", "API_BASE_URL", "\"https://bill.jotko.workers.dev/\"")
+      /**
+       * Fills the code in from the server instead of waiting for an SMS.
+       *
+       * This is on because there is no SMS gateway yet and the build is being handed to
+       * people to try. It only does anything while the server keeps OTP_DEBUG on, and it
+       * means anyone holding this APK can sign in as any number, because the code is
+       * readable from a public route. Turn both off together before this reaches anyone
+       * whose bills matter.
+       */
+      buildConfigField("Boolean", "OTP_AUTOFILL", "true")
       signingConfig = signingConfigs.getByName("measure")
     }
 
@@ -61,7 +72,17 @@ android {
       initWith(getByName("release"))
       applicationIdSuffix = ".measure"
       matchingFallbacks += listOf("release")
-      buildConfigField("String", "API_BASE_URL", "\"http://localhost:3000/\"")
+      buildConfigField("String", "API_BASE_URL", "\"https://bill.jotko.workers.dev/\"")
+      /**
+       * Fills the code in from the server instead of waiting for an SMS.
+       *
+       * This is on because there is no SMS gateway yet and the build is being handed to
+       * people to try. It only does anything while the server keeps OTP_DEBUG on, and it
+       * means anyone holding this APK can sign in as any number, because the code is
+       * readable from a public route. Turn both off together before this reaches anyone
+       * whose bills matter.
+       */
+      buildConfigField("Boolean", "OTP_AUTOFILL", "true")
       signingConfig = signingConfigs.getByName("measure")
     }
   }
@@ -124,6 +145,10 @@ dependencies {
   // The measure build is release-shaped but still talks to the dev server, so it keeps
   // the logging interceptor the debug build has.
   "measureImplementation"(libs.okhttp.logging)
+  // Release names the interceptor too, inside a `BuildConfig.DEBUG` branch R8 removes
+  // before it ever runs. The symbol still has to resolve to compile, so the release
+  // variant needs the type without shipping the library.
+  releaseCompileOnly(libs.okhttp.logging)
 
   implementation(libs.camerax.core)
   implementation(libs.camerax.camera2)
@@ -131,6 +156,7 @@ dependencies {
   implementation(libs.camerax.view)
   implementation(libs.mlkit.barcode)
   implementation(libs.zxing.core)
+  implementation(libs.image.cropper)
 
   testImplementation(libs.junit)
   androidTestImplementation(libs.androidx.junit)

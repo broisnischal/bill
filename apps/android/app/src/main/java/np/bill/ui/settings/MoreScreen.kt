@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Tune
@@ -45,6 +46,7 @@ fun MoreScreen(
   onBusiness: () -> Unit,
   onPreferences: () -> Unit,
   onWebLogin: () -> Unit,
+  onPaymentQr: () -> Unit,
   duesPaisa: Long,
   modifier: Modifier = Modifier,
 ) {
@@ -86,6 +88,12 @@ fun MoreScreen(
         icon = Icons.Filled.Tune,
         label = stringResource(R.string.settings),
         onClick = onPreferences,
+      )
+      Hairline()
+      Entry(
+        icon = Icons.Filled.QrCode2,
+        label = stringResource(R.string.qr_payments),
+        onClick = onPaymentQr,
       )
       Hairline()
       Entry(
