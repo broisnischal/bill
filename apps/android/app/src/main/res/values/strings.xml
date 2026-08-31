@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bill</string>
+
+    <!-- Sign in -->
+    <string name="sign_in_title">Your mobile number</string>
+    <string name="sign_in_subtitle">We send a code by SMS. No password to remember.</string>
+    <string name="phone_label">Mobile number</string>
+    <string name="phone_hint">98XXXXXXXX</string>
+    <string name="send_code">Send code</string>
+    <string name="phone_invalid">Enter a 10-digit Nepali mobile number</string>
+    <string name="otp_title">Enter the code</string>
+    <string name="otp_subtitle">Sent to %1$s</string>
+    <string name="otp_label">6-digit code</string>
+    <string name="dev_code_filled">Filled in from your local server. No SMS was sent.</string>
+    <string name="verify">Verify</string>
+    <string name="resend_code">Send it again</string>
+    <string name="change_number">Change number</string>
+
+    <!-- Mode -->
+    <string name="mode_title">How will you use Bill?</string>
+    <string name="mode_business">I run a business</string>
+    <string name="mode_business_detail">Make bills, print them, keep records for the IRD</string>
+    <string name="mode_customer">I am a customer</string>
+    <string name="mode_customer_detail">Scan bills you are given and keep them on your phone</string>
+    <string name="switch_mode">Switch mode</string>
+
+    <!-- Onboarding -->
+    <string name="register_title">Your business</string>
+    <string name="register_subtitle">This is what prints on every bill. It takes a minute.</string>
+    <string name="business_name">Business name</string>
+    <string name="business_name_nepali">Name in Nepali (optional)</string>
+    <string name="pan">PAN number</string>
+    <string name="pan_hint">9 digits</string>
+    <string name="pan_invalid">A PAN is exactly 9 digits</string>
+    <string name="taxpayer_type">Registration</string>
+    <string name="taxpayer_vat">VAT registered</string>
+    <string name="taxpayer_pan">PAN only</string>
+    <string name="registration_date">Registered on (BS)</string>
+    <string name="registration_date_hint">2079-04-15</string>
+    <string name="business_type">Business type</string>
+    <string name="address">Address</string>
+    <string name="ward">Ward</string>
+    <string name="municipality">Municipality</string>
+    <string name="district">District</string>
+    <string name="province">Province</string>
+    <string name="business_phone">Shop phone (optional)</string>
+    <string name="save_and_start">Save and start billing</string>
+    <string name="register_needs_network">Registering the business needs a connection. Bills you make after that work offline.</string>
+
+    <!-- Billing -->
+    <string name="new_bill">New bill</string>
+    <string name="today">Today</string>
+    <string name="bills_today">%1$d bills</string>
+    <string name="buyer_name">Customer name</string>
+    <string name="buyer_name_default">Cash customer</string>
+    <string name="buyer_phone">Customer phone (optional)</string>
+    <string name="buyer_pan">Customer PAN (optional)</string>
+    <string name="add_item">Add item</string>
+    <string name="item_name">Item</string>
+    <string name="quantity">Qty</string>
+    <string name="rate">Rate</string>
+    <string name="amount">Amount</string>
+    <string name="vat_exempt">VAT exempt</string>
+    <string name="sub_total">Sub total</string>
+    <string name="discount">Discount</string>
+    <string name="taxable">Taxable</string>
+    <string name="exempt">Exempt</string>
+    <string name="vat_at">VAT @ %1$d%%</string>
+    <string name="total">Total</string>
+    <string name="payment_method">Paid by</string>
+    <string name="save_bill">Make bill</string>
+    <string name="bill_made">Bill %1$s made</string>
+    <string name="print">Print</string>
+    <string name="share_pdf">Share</string>
+    <string name="reprint">Print again</string>
+    <string name="show_qr">Show QR</string>
+    <string name="qr_caption">The customer scans this to keep the bill</string>
+    <string name="done">Done</string>
+    <string name="cancel">Cancel</string>
+    <string name="cancel_bill">Cancel this bill</string>
+    <string name="cancel_reason">Why is it being cancelled?</string>
+    <string name="cancelled">Cancelled</string>
+    <string name="remove">Remove</string>
+
+    <!-- Status -->
+    <string name="offline_banner">No connection. Bills are being kept and will sync.</string>
+    <string name="pending_sync">%1$d waiting to sync</string>
+    <string name="synced">Synced</string>
+    <string name="not_synced">Waiting to sync</string>
+    <string name="rejected">Needs attention</string>
+    <string name="rejected_detail">The office could not accept this bill. Raise a credit note against it.</string>
+    <string name="numbers_left">%1$d bill numbers left offline</string>
+    <string name="numbers_low">Connect to the internet soon to get more bill numbers</string>
+    <string name="out_of_numbers">No bill numbers left. Connect to the internet to get more.</string>
+
+    <!-- Errors -->
+    <string name="error_zero_total">A bill has to come to more than zero</string>
+    <string name="error_no_lines">Add at least one item</string>
+    <string name="error_abbreviated_limit">An abbreviated bill cannot go over Rs 10,000. Make a full tax invoice.</string>
+    <string name="retry">Try again</string>
+
+    <!-- Customer mode -->
+    <string name="scan_bill">Scan a bill</string>
+    <string name="scan_hint">Point the camera at the QR code on your bill</string>
+    <string name="camera_permission">Bill needs the camera to scan the QR code on a bill</string>
+    <string name="grant_permission">Allow camera</string>
+    <string name="my_bills">My bills</string>
+    <string name="no_bills_yet">No bills yet. Scan the QR on a bill you are given.</string>
+    <string name="bill_saved">Bill saved</string>
+    <string name="bill_not_found">That code did not match a bill</string>
+    <string name="spent_this_month">Spent this month</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="language">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_nepali">नेपाली</string>
+    <string name="printer">Thermal printer</string>
+    <string name="printer_none">No printer chosen</string>
+    <string name="printer_pair_hint">Pair the printer in Android Bluetooth settings, then pick it here.</string>
+    <string name="sync_now">Sync now</string>
+    <string name="sign_out">Sign out</string>
+    <string name="items">Items</string>
+    <string name="customers">Customers</string>
+    <string name="bills">Bills</string>
+    <!-- Products and customers -->
+    <string name="add_product">Add product</string>
+    <string name="edit_product">Edit product</string>
+    <string name="search_items">Search products</string>
+    <string name="no_items_yet">No products yet. Add what you sell and billing gets faster.</string>
+    <string name="unit">Unit</string>
+    <string name="hs_code">HS code (optional)</string>
+    <string name="barcode">Barcode</string>
+    <string name="scan_barcode">Scan barcode</string>
+    <string name="scan_product_hint">Point at the barcode on the packet</string>
+    <string name="product_not_found">That barcode is not one of your products yet</string>
+    <string name="save">Save</string>
+    <string name="search">Search</string>
+    <string name="add_customer">Add customer</string>
+    <string name="edit_customer">Edit customer</string>
+    <string name="search_customers">Search customers</string>
+    <string name="no_customers_yet">No customers yet. Add one, or import from your phone.</string>
+    <string name="no_phone">No phone number</string>
+    <string name="import_contacts">Import from contacts</string>
+    <string name="import_contacts_detail">Tick the people you sell to. Nothing else is read.</string>
+    <string name="import_selected">Import %1$d</string>
+    <string name="contacts_imported">%1$d customers added</string>
+
+    <!-- Navigation -->
+    <string name="nav_bills">Bills</string>
+    <string name="nav_products">Products</string>
+    <string name="nav_customers">Customers</string>
+    <string name="nav_more">More</string>
+    <string name="nav_wallet">My bills</string>
+    <string name="nav_card">My card</string>
+
+    <!-- Status -->
+    <string name="printer_ready">Printer: %1$s</string>
+
+    <!-- Romanized typing -->
+    <string name="romanize_on">Typing Nepali: write "pasal" for पसल</string>
+    <string name="romanize_off">Tap क to type Nepali from Roman letters</string>
+
+    <!-- Address -->
+    <string name="use_my_location">Use my location</string>
+    <string name="location_filled">Filled in from your location. Correct anything that is wrong.</string>
+    <string name="location_unavailable">Could not work out where you are. Fill it in yourself.</string>
+    <string name="local_level">Municipality / Rural municipality</string>
+    <string name="street_address">Street or tole</string>
+
+    <!-- Filters -->
+    <string name="filters">Filters</string>
+    <string name="filter_all">All</string>
+    <string name="filter_active">Active</string>
+    <string name="filter_cancelled">Cancelled</string>
+    <string name="filter_unsynced">Not synced</string>
+    <string name="filter_from">From</string>
+    <string name="filter_to">To</string>
+    <string name="clear_filters">Clear</string>
+    <string name="showing_count">%1$d bills · Rs %2$s</string>
+
+    <!-- Customer card -->
+    <string name="my_card_title">Your card</string>
+    <string name="my_card_detail">Show this at the counter. The shop scans it and your bill is made out to you.</string>
+    <string name="my_card_name">Name on your bills</string>
+    <string name="save_card">Save</string>
+    <string name="scan_customer">Scan customer card</string>
+    <string name="customer_scanned">Billing %1$s</string>
+
+    <!-- Bill entry -->
+    <string name="pick_product">Pick a product</string>
+    <string name="notes">Note on this bill (optional)</string>
+    <string name="bill_type">Bill type</string>
+    <string name="type_tax_invoice">Tax invoice</string>
+    <string name="type_abbreviated">Abbreviated</string>
+    <string name="appearance">Appearance</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <!-- Calculator -->
+    <string name="use_amount">Use</string>
+    <string name="calculator">Calculator</string>
+
+    <!-- Dues -->
+    <string name="nav_dues">Dues</string>
+    <string name="dues_title">Money owed</string>
+    <string name="no_dues">Nobody owes you anything. Good.</string>
+    <string name="due_amount">Due Rs %1$s</string>
+    <string name="total_due">Owed to you</string>
+    <string name="paid_now">Paid now</string>
+    <string name="pay_full">Full amount</string>
+    <string name="pay_partial">Part payment</string>
+    <string name="pay_later">On credit</string>
+    <string name="due_date">Pay by</string>
+    <string name="record_payment">Record payment</string>
+    <string name="payment_recorded">Rs %1$s received</string>
+    <string name="settled">Settled</string>
+    <string name="amount_received">Amount received</string>
+
+    <!-- Business settings -->
+    <string name="business_settings">Business</string>
+    <string name="invoice_prefix">Bill number prefix</string>
+    <string name="invoice_prefix_hint">INV gives INV-2082.083-000001</string>
+    <string name="print_footer">Footer printed on every bill</string>
+    <string name="bank_details">Bank details on the invoice</string>
+    <string name="cbms_title">IRD real-time sync</string>
+    <string name="cbms_detail">VAT-registered shops push every bill to the IRD as it is issued.</string>
+    <string name="cbms_username">CBMS username</string>
+    <string name="cbms_password">CBMS password</string>
+    <string name="cbms_password_kept">Leave blank to keep the saved password</string>
+    <string name="saved">Saved</string>
+    <string name="pan_locked">The PAN cannot change: bills already carry it.</string>
+
+    <!-- Reports -->
+    <string name="nav_reports">Reports</string>
+    <string name="reports_title">Reports</string>
+    <string name="this_fiscal_year">Fiscal year %1$s</string>
+    <string name="sales_total">Sales</string>
+    <string name="vat_collected">VAT collected</string>
+    <string name="bill_count">Bills</string>
+    <string name="average_bill">Average bill</string>
+    <string name="top_products">Best sellers</string>
+    <string name="last_days">Last 14 days</string>
+    <string name="no_sales_yet">No sales yet this year.</string>
+    <string name="exempt_sales">Exempt sales</string>
+    <string name="taxable_sales">Taxable sales</string>
+
+    <!-- Contacts and sharing -->
+    <string name="select_all">Select all</string>
+    <string name="clear_selection">Clear</string>
+    <string name="share_80mm">Receipt (80mm)</string>
+    <string name="share_a4">Invoice (A4)</string>
+    <string name="choose_paper">Which paper?</string>
+    <string name="torch">Light</string>
+    <string name="sell_this">Put on a bill</string>
+    <string name="bill_this_customer">Make a bill for them</string>
+    <string name="scan_to_add">Scan a barcode to add</string>
+    <string name="how_paid">How was it paid?</string>
+    <string name="paid_full">Paid in full</string>
+    <string name="owed">Owed</string>
+    <string name="choose_payment_first">Say whether this was paid before making the bill</string>
+    <string name="owes_now">Owes Rs %1$s</string>
+    <string name="put_on_bill">Put %1$d on a bill</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="add_selected">Add %1$d</string>
+    <string name="long_press_hint">Hold to pick several</string>
+    <string name="add_named_product">Add “%1$s” as a new item</string>
+    <string name="use_named_buyer">Bill “%1$s”</string>
+    <string name="nav_home">Home</string>
+    <string name="web_login">Sign in a computer</string>
+    <string name="web_login_detail">Open bill.np on the computer, choose “Use my phone”, and type the code it shows here.</string>
+    <string name="web_login_code">Code from the computer</string>
+    <string name="web_login_asking">Signing in</string>
+    <string name="web_login_approve">Let it in</string>
+    <string name="web_login_deny">Not me</string>
+    <string name="web_login_done">The computer is signed in.</string>
+</resources>
