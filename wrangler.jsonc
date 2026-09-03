@@ -46,7 +46,7 @@
 
     // Who may review a business at /admin, as mobile numbers in E.164, comma separated.
     // Empty means nobody, and a deployment with nobody cannot approve anyone.
-    "ADMIN_PHONES": "+9779856454546",
+    "ADMIN_PHONES": "+9779741844523",
     "SPARROW_SMS_FROM": "Demo",
   },
 
