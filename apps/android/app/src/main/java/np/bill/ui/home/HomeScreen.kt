@@ -81,7 +81,6 @@ fun HomeScreen(
   onDues: () -> Unit,
   onBills: () -> Unit,
   onOpenBill: (String) -> Unit,
-  onShowQr: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val tokens = LocalTokens.current
@@ -140,60 +139,6 @@ fun HomeScreen(
           icon = BillIcons.Plus,
         )
 
-        Spacer(Modifier.height(10.dp))
-        Row(
-          Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.pill))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .clickable(onClick = onShowQr)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.Center,
-        ) {
-          Icon(
-            BillIcons.QrCode,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(22.dp),
-          )
-          Spacer(Modifier.size(8.dp))
-          Text(stringResource(R.string.qr_show), style = MaterialTheme.typography.titleLarge)
-        }
-      }
-    }
-
-    // The shop's own baskets. First thing under the takings, because on a meat counter
-    // or a kirana this is how nearly every bill starts.
-    Spacer(Modifier.height(20.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(
-        stringResource(R.string.quick_bill),
-        style = MaterialTheme.typography.headlineSmall,
-        modifier = Modifier.weight(1f),
-      )
-    }
-    Spacer(Modifier.height(10.dp))
-
-    if (templates.isEmpty()) {
-      Text(
-        stringResource(R.string.quick_bill_empty),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-    } else {
-      Row(
-        Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-      ) {
-        for (template in templates) {
-          TemplateChip(
-            name = template.template.name,
-            lines = template.lines.size,
-            onClick = { onQuickBill(template.template.id) },
-            onLongClick = { removing = template.template.id to template.template.name },
-          )
-        }
       }
     }
 

@@ -80,6 +80,8 @@ fun Shell(
   pendingSync: Int = 0,
   offline: Boolean = false,
   showStatus: Boolean = true,
+  /** The payment code, as the one action in the middle of the tabs. Null hides it. */
+  onShowQr: (() -> Unit)? = null,
   floatingActionButton: @Composable () -> Unit = {},
   content: @Composable (Modifier) -> Unit,
 ) {
@@ -126,7 +128,14 @@ fun Shell(
           ),
         )
       },
-      bottomBar = { FloatingNav(tabs = tabs, selectedRoute = selectedRoute, onSelect = onSelect) },
+      bottomBar = {
+        FloatingNav(
+          tabs = tabs,
+          selectedRoute = selectedRoute,
+          onSelect = onSelect,
+          onShowQr = onShowQr,
+        )
+      },
       floatingActionButton = floatingActionButton,
     ) { padding ->
       Box(Modifier.fillMaxSize()) {
@@ -146,7 +155,12 @@ fun Shell(
  * same width, so choosing one moves nothing.
  */
 @Composable
-private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (String) -> Unit) {
+private fun FloatingNav(
+  tabs: List<ShellTab>,
+  selectedRoute: String,
+  onSelect: (String) -> Unit,
+  onShowQr: (() -> Unit)?,
+) {
   val tokens = LocalTokens.current
 
   // Concentric: the circle behind the chosen icon is 44dp across, so its radius is 22,
@@ -176,41 +190,90 @@ private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (
         },
       )
       .padding(6.dp),
-    // Spread. Without this the Row defaults to packing every circle against the left
-    // edge, which is what it was doing.
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    for (tab in tabs) {
-      val active = tab.route == selectedRoute
+    /**
+     * The tabs in two groups with the payment code between them.
+     *
+     * Taking money is not a place in the app, it is the thing a shopkeeper does with a
+     * customer standing there, so it sits where a thumb already rests rather than on a
+     * screen they have to be on first. Two groups each taking half the width put it dead
+     * centre whichever way the tabs divide.
+     */
+    val half = tabs.size / 2
 
-      // One circle per tab, and the circle is the whole slot. It used to be centred
-      // inside a weight(1f) slot, which made it about 16dp from the bar's end while
-      // being 6dp from its top and bottom: an uneven ring, and that is what kept reading
-      // as a wrong border. Fixed slots spread across the row sit exactly 6dp in on every
-      // side, and 22 + 6 is the bar's own 28.
+    Row(
+      Modifier.weight(1f),
+      horizontalArrangement = Arrangement.SpaceEvenly,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      for (tab in tabs.take(half)) {
+        NavCircle(tab = tab, active = tab.route == selectedRoute, onSelect = onSelect)
+      }
+    }
+
+    onShowQr?.let { show ->
       Box(
         Modifier
           .size(NavItem)
           .clip(CircleShape)
-          .background(if (active) tokens.ink else Color.Transparent)
-          .clickable { onSelect(tab.route) },
+          .background(tokens.accent)
+          .clickable(onClick = show),
         contentAlignment = Alignment.Center,
       ) {
-        BadgedBox(
-          badge = {
-            if (tab.badge > 0) Badge { Text(if (tab.badge > 99) "99+" else "${tab.badge}") }
-          },
-        ) {
-          Icon(
-            tab.icon,
-            // The label is gone, so the icon carries the name for a screen reader.
-            contentDescription = stringResource(tab.labelRes),
-            tint = if (active) tokens.onInk else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(NavIcon),
-          )
-        }
+        Icon(
+          BillIcons.QrCode,
+          contentDescription = stringResource(R.string.qr_show),
+          tint = tokens.onInk,
+          modifier = Modifier.size(NavIcon),
+        )
       }
+    }
+
+    Row(
+      Modifier.weight(1f),
+      horizontalArrangement = Arrangement.SpaceEvenly,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      for (tab in tabs.drop(half)) {
+        NavCircle(tab = tab, active = tab.route == selectedRoute, onSelect = onSelect)
+      }
+    }
+  }
+}
+
+/**
+ * One tab: a circle that fills its slot, so the ring around it is even.
+ *
+ * It used to be centred inside a weight(1f) slot, which left it about 16dp from the
+ * bar's end while being 6dp from its top and bottom. The radius arithmetic was right and
+ * it still looked wrong, because concentricity is the gap being equal all the way round.
+ */
+@Composable
+private fun NavCircle(tab: ShellTab, active: Boolean, onSelect: (String) -> Unit) {
+  val tokens = LocalTokens.current
+
+  Box(
+    Modifier
+      .size(NavItem)
+      .clip(CircleShape)
+      .background(if (active) tokens.ink else Color.Transparent)
+      .clickable { onSelect(tab.route) },
+    contentAlignment = Alignment.Center,
+  ) {
+    BadgedBox(
+      badge = {
+        if (tab.badge > 0) Badge { Text(if (tab.badge > 99) "99+" else "${tab.badge}") }
+      },
+    ) {
+      Icon(
+        tab.icon,
+        // The label is gone, so the icon carries the name for a screen reader.
+        contentDescription = stringResource(tab.labelRes),
+        tint = if (active) tokens.onInk else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(NavIcon),
+      )
     }
   }
 }

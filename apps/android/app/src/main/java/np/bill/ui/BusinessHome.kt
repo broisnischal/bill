@@ -122,6 +122,7 @@ fun BusinessHome(
     printerConnected = state.printerConnected,
     printerName = state.printerName,
     pendingSync = state.pendingSync,
+    onShowQr = { showQr = true },
   ) { modifier ->
     // No transition between tabs. A crossfade of two whole screens reads as a flash,
     // because the two rarely have content in the same places, and it puts a frame of
@@ -156,7 +157,6 @@ fun BusinessHome(
           morePage = MorePage.CREDIT
         },
         onBills = { selected = Tabs.bills.route },
-        onShowQr = { showQr = true },
         modifier = modifier,
       )
       Tabs.products.route -> ItemsScreen(
