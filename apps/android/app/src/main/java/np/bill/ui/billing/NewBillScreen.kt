@@ -367,7 +367,7 @@ fun NewBillScreen(
           // Paid or owed is gone from here. A bill is the record of a sale that was
           // settled: it carries a number from a government series, it is immutable once
           // issued, and it can only be undone with a credit note. Money somebody owes is
-          // not that — it is a running account, and it lives in Karobar until it is
+          // not that — it is a running account, and it lives in the credit book until it is
           // paid, at which point a bill is made for it.
 
           Spacer(Modifier.height(8.dp))

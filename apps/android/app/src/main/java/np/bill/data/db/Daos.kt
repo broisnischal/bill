@@ -216,28 +216,28 @@ interface LeaseDao {
 }
 
 @Dao
-interface KarobarDao {
+interface CreditDao {
 
   /** Open first and oldest first: the money that has been out longest is what to chase. */
-  @Query("SELECT * FROM karobar_entry WHERE settledAt IS NULL ORDER BY createdAt")
-  fun open(): Flow<List<KarobarEntryEntity>>
+  @Query("SELECT * FROM credit_entry WHERE settledAt IS NULL ORDER BY createdAt")
+  fun open(): Flow<List<CreditEntryEntity>>
 
-  @Query("SELECT * FROM karobar_entry WHERE settledAt IS NOT NULL ORDER BY settledAt DESC LIMIT 50")
-  fun settled(): Flow<List<KarobarEntryEntity>>
+  @Query("SELECT * FROM credit_entry WHERE settledAt IS NOT NULL ORDER BY settledAt DESC LIMIT 50")
+  fun settled(): Flow<List<CreditEntryEntity>>
 
-  @Query("SELECT COALESCE(SUM(amountPaisa), 0) FROM karobar_entry WHERE settledAt IS NULL")
+  @Query("SELECT COALESCE(SUM(amountPaisa), 0) FROM credit_entry WHERE settledAt IS NULL")
   fun outstanding(): Flow<Long>
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
-  suspend fun upsert(entry: KarobarEntryEntity)
+  suspend fun upsert(entry: CreditEntryEntity)
 
-  @Query("UPDATE karobar_entry SET settledAt = :now WHERE id = :id")
+  @Query("UPDATE credit_entry SET settledAt = :now WHERE id = :id")
   suspend fun settle(id: String, now: Long)
 
-  @Query("UPDATE karobar_entry SET settledAt = NULL WHERE id = :id")
+  @Query("UPDATE credit_entry SET settledAt = NULL WHERE id = :id")
   suspend fun reopen(id: String)
 
-  @Query("DELETE FROM karobar_entry WHERE id = :id")
+  @Query("DELETE FROM credit_entry WHERE id = :id")
   suspend fun delete(id: String)
 }
 

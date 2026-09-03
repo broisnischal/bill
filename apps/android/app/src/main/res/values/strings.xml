@@ -361,21 +361,22 @@
     <string name="preview_back">Change something</string>
     <string name="preview_for">For %1$s</string>
 
-    <string name="karobar_title">Karobar</string>
-    <string name="karobar_detail">What customers took and have not paid for</string>
-    <string name="karobar_outstanding">Still owed</string>
-    <string name="karobar_people">%1$d entries open</string>
-    <string name="karobar_empty">Nothing owed. When someone takes goods without paying, write it here instead of making a bill.</string>
-    <string name="karobar_settled">Paid</string>
-    <string name="karobar_add">Add to the book</string>
-    <string name="karobar_add_detail">A bill is for money you have taken. This is for money you are owed.</string>
-    <string name="karobar_what">What they took</string>
-    <string name="karobar_what_hint">Two kg masu, a gas cylinder, whatever it was</string>
-    <string name="karobar_note_hint">When they said they would pay, for instance</string>
-    <string name="karobar_owes">Owes Rs %1$s</string>
-    <string name="karobar_paid_on">Rs %1$s, paid</string>
-    <string name="karobar_mark_paid">They paid</string>
-    <string name="karobar_reopen">Still owed</string>
+
+    <string name="credit_title">Credit book</string>
+    <string name="credit_detail">What customers took and have not paid for</string>
+    <string name="credit_outstanding">Still owed</string>
+    <string name="credit_people">%1$d entries open</string>
+    <string name="credit_empty">Nothing owed. When someone takes goods without paying, write it here instead of making a bill.</string>
+    <string name="credit_settled">Paid</string>
+    <string name="credit_add">Give on credit</string>
+    <string name="credit_add_detail">A bill is for money you have taken. This is for money you are owed.</string>
+    <string name="credit_what">What they took</string>
+    <string name="credit_what_hint">Two kg masu, a gas cylinder, whatever it was</string>
+    <string name="credit_note_hint">When they said they would pay, for instance</string>
+    <string name="credit_owes">Owes Rs %1$s</string>
+    <string name="credit_paid_on">Rs %1$s, paid</string>
+    <string name="credit_mark_paid">They paid</string>
+    <string name="credit_reopen">Still owed</string>
 
     <!-- Bill templates -->
     <string name="template_empty">Nothing on this bill to save.</string>

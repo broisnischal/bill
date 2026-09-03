@@ -5,8 +5,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import np.bill.core.nepali.BsCalendar
-import np.bill.data.db.KarobarDao
-import np.bill.data.db.KarobarEntryEntity
+import np.bill.data.db.CreditDao
+import np.bill.data.db.CreditEntryEntity
 
 /**
  * The credit book.
@@ -17,13 +17,13 @@ import np.bill.data.db.KarobarEntryEntity
  * arrives the shop makes a bill for it and closes the entry.
  */
 @Singleton
-class KarobarRepository @Inject constructor(private val karobar: KarobarDao) {
+class CreditRepository @Inject constructor(private val credit: CreditDao) {
 
-  fun open(): Flow<List<KarobarEntryEntity>> = karobar.open()
+  fun open(): Flow<List<CreditEntryEntity>> = credit.open()
 
-  fun settled(): Flow<List<KarobarEntryEntity>> = karobar.settled()
+  fun settled(): Flow<List<CreditEntryEntity>> = credit.settled()
 
-  fun outstanding(): Flow<Long> = karobar.outstanding()
+  fun outstanding(): Flow<Long> = credit.outstanding()
 
   suspend fun add(
     buyerName: String,
@@ -32,9 +32,9 @@ class KarobarRepository @Inject constructor(private val karobar: KarobarDao) {
     buyerPhone: String? = null,
     customerId: String? = null,
     note: String? = null,
-  ): KarobarEntryEntity {
+  ): CreditEntryEntity {
     val now = System.currentTimeMillis()
-    val entry = KarobarEntryEntity(
+    val entry = CreditEntryEntity(
       id = UUID.randomUUID().toString(),
       customerId = customerId,
       buyerName = buyerName.trim(),
@@ -45,14 +45,14 @@ class KarobarRepository @Inject constructor(private val karobar: KarobarDao) {
       miti = BsCalendar.toBs(now).toString(),
       createdAt = now,
     )
-    karobar.upsert(entry)
+    credit.upsert(entry)
     return entry
   }
 
   /** Paid. The entry stays in the book so the shop can see what was settled and when. */
-  suspend fun settle(id: String) = karobar.settle(id, System.currentTimeMillis())
+  suspend fun settle(id: String) = credit.settle(id, System.currentTimeMillis())
 
-  suspend fun reopen(id: String) = karobar.reopen(id)
+  suspend fun reopen(id: String) = credit.reopen(id)
 
-  suspend fun delete(id: String) = karobar.delete(id)
+  suspend fun delete(id: String) = credit.delete(id)
 }

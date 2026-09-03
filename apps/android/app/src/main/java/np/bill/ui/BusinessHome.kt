@@ -53,8 +53,8 @@ fun BusinessHome(
   val state by viewModel.home.collectAsStateWithLifecycle()
   val templates by viewModel.templates.collectAsStateWithLifecycle()
   // The book's total lives on the hub row, so it is read here rather than inside it.
-  val karobar: np.bill.ui.karobar.KarobarViewModel = hiltViewModel()
-  val karobarOutstanding by karobar.outstanding.collectAsStateWithLifecycle()
+  val credit: np.bill.ui.credit.CreditBookViewModel = hiltViewModel()
+  val creditOutstanding by credit.outstanding.collectAsStateWithLifecycle()
   var selected by rememberSaveable { mutableStateOf(Tabs.home.route) }
   var addProduct by remember { mutableStateOf(false) }
   var addCustomer by remember { mutableStateOf(false) }
@@ -104,7 +104,7 @@ fun BusinessHome(
     selected == Tabs.products.route -> stringResource(R.string.nav_products)
     selected == Tabs.customers.route -> stringResource(R.string.nav_customers)
     selected == Tabs.more.route -> when (morePage) {
-      MorePage.KAROBAR -> stringResource(R.string.karobar_title)
+      MorePage.CREDIT -> stringResource(R.string.credit_title)
       MorePage.DUES -> stringResource(R.string.dues_title)
       MorePage.REPORTS -> stringResource(R.string.reports_title)
       MorePage.BUSINESS -> stringResource(R.string.business_settings)
@@ -174,7 +174,7 @@ fun BusinessHome(
         modifier = modifier,
       )
       Tabs.more.route -> when (page) {
-        MorePage.KAROBAR -> np.bill.ui.karobar.KarobarScreen(modifier = modifier)
+        MorePage.CREDIT -> np.bill.ui.credit.CreditBookScreen(modifier = modifier)
         MorePage.DUES -> DuesScreen(modifier = modifier)
         MorePage.REPORTS -> ReportsScreen(modifier = modifier)
         MorePage.BUSINESS -> BusinessSettingsScreen(
@@ -192,7 +192,7 @@ fun BusinessHome(
           modifier = modifier,
         )
         MorePage.HUB -> MoreScreen(
-          onKarobar = { morePage = MorePage.KAROBAR },
+          onCreditBook = { morePage = MorePage.CREDIT },
           onDues = { morePage = MorePage.DUES },
           onReports = { morePage = MorePage.REPORTS },
           onBusiness = { morePage = MorePage.BUSINESS },
@@ -200,7 +200,7 @@ fun BusinessHome(
           onWebLogin = { morePage = MorePage.WEB_LOGIN },
           onPaymentQr = { morePage = MorePage.PAYMENT_QR },
           duesPaisa = state.duePaisa,
-          karobarPaisa = karobarOutstanding,
+          creditPaisa = creditOutstanding,
           modifier = modifier,
         )
       }
@@ -237,5 +237,5 @@ fun BusinessHome(
 
 /** Where the More tab currently is. It is a small stack, not a second navigation graph. */
 private enum class MorePage {
-  HUB, KAROBAR, DUES, REPORTS, BUSINESS, PREFERENCES, WEB_LOGIN, PAYMENT_QR
+  HUB, CREDIT, DUES, REPORTS, BUSINESS, PREFERENCES, WEB_LOGIN, PAYMENT_QR
 }

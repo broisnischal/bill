@@ -31,9 +31,9 @@ data class BillWithDue(
     PaymentQrEntity::class,
     BillTemplateEntity::class,
     BillTemplateLineEntity::class,
-    KarobarEntryEntity::class,
+    CreditEntryEntity::class,
   ],
-  version = 11,
+  version = 12,
   exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -45,7 +45,7 @@ abstract class BillDatabase : RoomDatabase() {
   abstract fun storeData(): StoreDataDao
   abstract fun paymentQrs(): PaymentQrDao
   abstract fun templates(): TemplateDao
-  abstract fun karobar(): KarobarDao
+  abstract fun credit(): CreditDao
 
   companion object {
     /**
@@ -148,6 +148,23 @@ abstract class BillDatabase : RoomDatabase() {
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_karobar_entry_settledAt ON karobar_entry (settledAt)")
         db.execSQL("CREATE INDEX IF NOT EXISTS index_karobar_entry_customerId ON karobar_entry (customerId)")
+      }
+    }
+
+    /**
+     * Karobar became the credit book.
+     *
+     * "Karobar" is business in general; उधारो is the specific thing this holds, goods
+     * taken on credit. Renamed rather than recreated so an entry somebody has already
+     * written down survives.
+     */
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+      override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE karobar_entry RENAME TO credit_entry")
+        db.execSQL("DROP INDEX IF EXISTS index_karobar_entry_settledAt")
+        db.execSQL("DROP INDEX IF EXISTS index_karobar_entry_customerId")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_credit_entry_settledAt ON credit_entry (settledAt)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_credit_entry_customerId ON credit_entry (customerId)")
       }
     }
 

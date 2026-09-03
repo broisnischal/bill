@@ -34,7 +34,7 @@ import np.bill.ui.common.Panel
  */
 @Composable
 fun MoreScreen(
-  onKarobar: () -> Unit,
+  onCreditBook: () -> Unit,
   onDues: () -> Unit,
   onReports: () -> Unit,
   onBusiness: () -> Unit,
@@ -42,7 +42,7 @@ fun MoreScreen(
   onWebLogin: () -> Unit,
   onPaymentQr: () -> Unit,
   duesPaisa: Long,
-  karobarPaisa: Long,
+  creditPaisa: Long,
   modifier: Modifier = Modifier,
 ) {
   Column(
@@ -56,13 +56,13 @@ fun MoreScreen(
       // anything else here.
       Entry(
         icon = BillIcons.Wallet,
-        label = stringResource(R.string.karobar_title),
-        detail = if (karobarPaisa > 0) {
-          "Rs ${np.bill.core.money.formatMoney(karobarPaisa)}"
+        label = stringResource(R.string.credit_title),
+        detail = if (creditPaisa > 0) {
+          "Rs ${np.bill.core.money.formatMoney(creditPaisa)}"
         } else {
-          stringResource(R.string.karobar_detail)
+          stringResource(R.string.credit_detail)
         },
-        onClick = onKarobar,
+        onClick = onCreditBook,
       )
       Hairline()
       Entry(

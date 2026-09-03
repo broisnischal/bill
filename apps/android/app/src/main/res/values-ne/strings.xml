@@ -314,21 +314,22 @@
     <string name="preview_back">केही बदल्नुहोस्</string>
     <string name="preview_for">%1$s को नाममा</string>
 
-    <string name="karobar_title">कारोबार</string>
-    <string name="karobar_detail">ग्राहकले लिएको र पैसा नआएको</string>
-    <string name="karobar_outstanding">बाँकी रकम</string>
-    <string name="karobar_people">%1$d जना बाँकी</string>
-    <string name="karobar_empty">कसैको बाँकी छैन। पैसा नतिरी सामान लिएको भए बिल नबनाएर यहाँ लेख्नुहोस्।</string>
-    <string name="karobar_settled">तिरिसकेको</string>
-    <string name="karobar_add">कारोबारमा थप्नुहोस्</string>
-    <string name="karobar_add_detail">बिल आएको पैसाको हो। यो आउनु बाँकी पैसाको हो।</string>
-    <string name="karobar_what">के लिए</string>
-    <string name="karobar_what_hint">दुई किलो मासु, ग्यास सिलिन्डर, जे लिए</string>
-    <string name="karobar_note_hint">कहिले तिर्ने भनेका थिए, जस्तो</string>
-    <string name="karobar_owes">Rs %1$s बाँकी</string>
-    <string name="karobar_paid_on">Rs %1$s, तिरिसकेको</string>
-    <string name="karobar_mark_paid">तिरे</string>
-    <string name="karobar_reopen">अझै बाँकी</string>
+
+    <string name="credit_title">उधारो</string>
+    <string name="credit_detail">ग्राहकले लिएको र पैसा नआएको</string>
+    <string name="credit_outstanding">बाँकी रकम</string>
+    <string name="credit_people">%1$d जना बाँकी</string>
+    <string name="credit_empty">कसैको उधारो छैन। पैसा नतिरी सामान लिएको भए बिल नबनाएर यहाँ लेख्नुहोस्।</string>
+    <string name="credit_settled">तिरिसकेको</string>
+    <string name="credit_add">उधारो दिनुहोस्</string>
+    <string name="credit_add_detail">बिल आएको पैसाको हो। यो आउनु बाँकी पैसाको हो।</string>
+    <string name="credit_what">के लिए</string>
+    <string name="credit_what_hint">दुई किलो मासु, ग्यास सिलिन्डर, जे लिए</string>
+    <string name="credit_note_hint">कहिले तिर्ने भनेका थिए, जस्तो</string>
+    <string name="credit_owes">Rs %1$s बाँकी</string>
+    <string name="credit_paid_on">Rs %1$s, तिरिसकेको</string>
+    <string name="credit_mark_paid">तिरे</string>
+    <string name="credit_reopen">अझै बाँकी</string>
 
     <!-- Bill templates -->
     <string name="template_empty">यो बिलमा सुरक्षित गर्ने कुरा छैन।</string>

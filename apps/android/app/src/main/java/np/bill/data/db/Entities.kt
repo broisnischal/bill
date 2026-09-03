@@ -165,8 +165,8 @@ data class ItemEntity(
  * The customer is kept as a name rather than only as an id, because half of these are
  * people the shop has never written down and is not about to stop and add.
  */
-@Entity(tableName = "karobar_entry", indices = [Index("settledAt"), Index("customerId")])
-data class KarobarEntryEntity(
+@Entity(tableName = "credit_entry", indices = [Index("settledAt"), Index("customerId")])
+data class CreditEntryEntity(
   @PrimaryKey val id: String,
   val customerId: String? = null,
   val buyerName: String,

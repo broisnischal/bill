@@ -1,4 +1,4 @@
-package np.bill.ui.karobar
+package np.bill.ui.credit
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import np.bill.R
 import np.bill.core.money.formatMoney
 import np.bill.core.nepali.BsDate
-import np.bill.data.db.KarobarEntryEntity
+import np.bill.data.db.CreditEntryEntity
 import np.bill.ui.common.ActionSheet
 import np.bill.ui.common.BottomAction
 import np.bill.ui.common.EmptyState
@@ -57,9 +57,9 @@ import np.bill.ui.theme.LocalTokens
  * the money arrives the shop marks it paid and makes a bill for it.
  */
 @Composable
-fun KarobarScreen(
+fun CreditBookScreen(
   modifier: Modifier = Modifier,
-  viewModel: KarobarViewModel = hiltViewModel(),
+  viewModel: CreditBookViewModel = hiltViewModel(),
 ) {
   val open by viewModel.open.collectAsStateWithLifecycle()
   val settled by viewModel.settled.collectAsStateWithLifecycle()
@@ -67,7 +67,7 @@ fun KarobarScreen(
   val tokens = LocalTokens.current
 
   var adding by remember { mutableStateOf(false) }
-  var acting by remember { mutableStateOf<KarobarEntryEntity?>(null) }
+  var acting by remember { mutableStateOf<CreditEntryEntity?>(null) }
 
   if (adding) {
     AddEntrySheet(
@@ -83,11 +83,11 @@ fun KarobarScreen(
     ActionSheet(
       title = entry.buyerName,
       subtitle = stringResource(
-        if (entry.settledAt == null) R.string.karobar_owes else R.string.karobar_paid_on,
+        if (entry.settledAt == null) R.string.credit_owes else R.string.credit_paid_on,
         formatMoney(entry.amountPaisa),
       ),
       primary = stringResource(
-        if (entry.settledAt == null) R.string.karobar_mark_paid else R.string.karobar_reopen,
+        if (entry.settledAt == null) R.string.credit_mark_paid else R.string.credit_reopen,
       ) to {
         if (entry.settledAt == null) viewModel.settle(entry) else viewModel.reopen(entry)
         acting = null
@@ -113,7 +113,7 @@ fun KarobarScreen(
           horizontalAlignment = Alignment.CenterHorizontally,
         ) {
           Text(
-            stringResource(R.string.karobar_outstanding).uppercase(),
+            stringResource(R.string.credit_outstanding).uppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -121,7 +121,7 @@ fun KarobarScreen(
           MoneyDisplay(outstanding, style = MaterialTheme.typography.displayMedium)
           Spacer(Modifier.height(4.dp))
           Text(
-            stringResource(R.string.karobar_people, open.size),
+            stringResource(R.string.credit_people, open.size),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -132,7 +132,7 @@ fun KarobarScreen(
       if (open.isEmpty()) {
         Panel {
           Text(
-            stringResource(R.string.karobar_empty),
+            stringResource(R.string.credit_empty),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -150,7 +150,7 @@ fun KarobarScreen(
 
       if (settled.isNotEmpty()) {
         Spacer(Modifier.height(24.dp))
-        Text(stringResource(R.string.karobar_settled), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.credit_settled), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(10.dp))
         Panel {
           for ((index, entry) in settled.withIndex()) {
@@ -163,13 +163,13 @@ fun KarobarScreen(
       Spacer(Modifier.height(24.dp))
     }
 
-    BottomAction(text = stringResource(R.string.karobar_add), onClick = { adding = true })
+    BottomAction(text = stringResource(R.string.credit_add), onClick = { adding = true })
   }
 }
 
 /** One line of the book: who, what, how much, and whether it is still out. */
 @Composable
-private fun EntryRow(entry: KarobarEntryEntity, onClick: () -> Unit) {
+private fun EntryRow(entry: CreditEntryEntity, onClick: () -> Unit) {
   val paid = entry.settledAt != null
   val tokens = LocalTokens.current
 
@@ -210,12 +210,12 @@ private fun EntryRow(entry: KarobarEntryEntity, onClick: () -> Unit) {
 
 /** Four things: who took it, what it was, how much, and anything worth remembering. */
 @Composable
-private fun AddEntrySheet(viewModel: KarobarViewModel, onDismiss: () -> Unit) {
+private fun AddEntrySheet(viewModel: CreditBookViewModel, onDismiss: () -> Unit) {
   val form by viewModel.form.collectAsStateWithLifecycle()
 
   FormSheet(
-    title = stringResource(R.string.karobar_add),
-    subtitle = stringResource(R.string.karobar_add_detail),
+    title = stringResource(R.string.credit_add),
+    subtitle = stringResource(R.string.credit_add_detail),
     onDismiss = onDismiss,
     heightFraction = 0.82f,
     action = {
@@ -234,8 +234,8 @@ private fun AddEntrySheet(viewModel: KarobarViewModel, onDismiss: () -> Unit) {
     Field(
       value = form.description,
       onValueChange = { value -> viewModel.onForm { it.copy(description = value) } },
-      label = stringResource(R.string.karobar_what),
-      hint = stringResource(R.string.karobar_what_hint),
+      label = stringResource(R.string.credit_what),
+      hint = stringResource(R.string.credit_what_hint),
     )
     Field(
       value = form.amount,
@@ -253,7 +253,7 @@ private fun AddEntrySheet(viewModel: KarobarViewModel, onDismiss: () -> Unit) {
       value = form.note,
       onValueChange = { value -> viewModel.onForm { it.copy(note = value) } },
       label = stringResource(R.string.notes),
-      hint = stringResource(R.string.karobar_note_hint),
+      hint = stringResource(R.string.credit_note_hint),
     )
     Spacer(Modifier.height(8.dp))
   }
