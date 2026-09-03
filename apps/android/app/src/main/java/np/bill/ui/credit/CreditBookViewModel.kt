@@ -7,6 +7,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ import np.bill.data.repo.CreditRepository
 
 /** What is being written into the book right now. */
 data class CreditForm(
+  val customerId: String? = null,
   val buyerName: String = "",
   val buyerPhone: String = "",
   val description: String = "",
@@ -31,7 +33,50 @@ data class CreditForm(
 @HiltViewModel
 class CreditBookViewModel @Inject constructor(
   private val credit: CreditRepository,
+  private val catalog: np.bill.data.repo.CatalogRepository,
+  private val billing: np.bill.data.repo.BillingRepository,
 ) : ViewModel() {
+
+  /**
+   * The same two shortcuts a bill has.
+   *
+   * Writing an entry into the book is the same act as writing a line onto a bill — who,
+   * what, how much — so it gets the same help: the regulars this counter has served, and
+   * the products the shop already sells with their prices.
+   */
+  val recentBuyers: kotlinx.coroutines.flow.StateFlow<List<np.bill.ui.billing.RecentBuyer>> =
+    billing.recent()
+      .map { bills ->
+        bills
+          .filter { it.status == "active" && it.buyerName.isNotBlank() }
+          .groupBy { it.buyerName.trim().lowercase() }
+          .values
+          .map { group -> group.firstOrNull { it.customerId != null } ?: group.first() }
+          .sortedByDescending { it.issuedAt }
+          .take(8)
+          .map {
+            np.bill.ui.billing.RecentBuyer(it.customerId, it.buyerName, it.buyerPhone, it.buyerPan)
+          }
+      }
+      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  fun itemSuggestions(term: String) = catalog.searchItems(term)
+
+  fun useBuyer(buyer: np.bill.ui.billing.RecentBuyer) = _form.update {
+    it.copy(
+      customerId = buyer.customerId,
+      buyerName = buyer.name,
+      buyerPhone = buyer.phone.orEmpty(),
+    )
+  }
+
+  /** A product the shop sells fills both what was taken and what it costs. */
+  fun useItem(item: np.bill.data.db.ItemEntity) = _form.update {
+    it.copy(
+      description = item.name,
+      amount = np.bill.core.money.paisaToInput(item.unitPricePaisa),
+    )
+  }
 
   val open = credit.open()
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -59,6 +104,7 @@ class CreditBookViewModel @Inject constructor(
         description = current.description,
         amountPaisa = parsePaisa(current.amount) ?: 0,
         buyerPhone = current.buyerPhone.ifBlank { null },
+        customerId = current.customerId,
         note = current.note.ifBlank { null },
       )
       _form.value = CreditForm()

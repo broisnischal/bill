@@ -1,5 +1,8 @@
 package np.bill.ui.credit
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +51,7 @@ import np.bill.ui.common.MoneyDisplay
 import np.bill.ui.common.Panel
 import np.bill.ui.common.PrimaryButton
 import np.bill.ui.theme.Gutter
+import np.bill.ui.theme.Radius
 import np.bill.ui.theme.LocalTokens
 
 /**
@@ -212,6 +218,8 @@ private fun EntryRow(entry: CreditEntryEntity, onClick: () -> Unit) {
 @Composable
 private fun AddEntrySheet(viewModel: CreditBookViewModel, onDismiss: () -> Unit) {
   val form by viewModel.form.collectAsStateWithLifecycle()
+  val regulars by viewModel.recentBuyers.collectAsStateWithLifecycle()
+  val tokens = LocalTokens.current
 
   FormSheet(
     title = stringResource(R.string.credit_add),
@@ -226,17 +234,77 @@ private fun AddEntrySheet(viewModel: CreditBookViewModel, onDismiss: () -> Unit)
       )
     },
   ) {
+    // The regulars this counter has served, same as on a bill. One tap fills the name
+    // and the phone from the last time.
+    if (regulars.isNotEmpty() && form.buyerName.isBlank()) {
+      Row(
+        Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        for (buyer in regulars) {
+          Row(
+            Modifier
+              .clip(RoundedCornerShape(Radius.pill))
+              .background(MaterialTheme.colorScheme.surface)
+              .border(1.dp, tokens.borderStrong, RoundedCornerShape(Radius.pill))
+              .clickable { viewModel.useBuyer(buyer) }
+              .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            InitialTile(buyer.name, size = 30.dp)
+            Spacer(Modifier.size(8.dp))
+            Text(buyer.name, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+          }
+        }
+      }
+      Spacer(Modifier.height(10.dp))
+    }
+
     Field(
       value = form.buyerName,
       onValueChange = { value -> viewModel.onForm { it.copy(buyerName = value) } },
       label = stringResource(R.string.buyer_name),
     )
+
     Field(
       value = form.description,
       onValueChange = { value -> viewModel.onForm { it.copy(description = value) } },
       label = stringResource(R.string.credit_what),
       hint = stringResource(R.string.credit_what_hint),
     )
+
+    // What the shop already sells, matched against what is being typed. Picking one
+    // fills the price too, which is the whole reason to offer them.
+    val matches by remember(form.description) {
+      if (form.description.trim().length >= 2) {
+        viewModel.itemSuggestions(form.description)
+      } else {
+        kotlinx.coroutines.flow.flowOf(emptyList())
+      }
+    }.collectAsStateWithLifecycle(emptyList())
+
+    if (matches.isNotEmpty() && matches.none { it.name.equals(form.description.trim(), true) }) {
+      Panel {
+        for ((index, match) in matches.take(4).withIndex()) {
+          if (index > 0) Hairline()
+          Row(
+            Modifier
+              .fillMaxWidth()
+              .clickable { viewModel.useItem(match) }
+              .padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            Text(match.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            Text(
+              "Rs ${formatMoney(match.unitPricePaisa)}",
+              style = MaterialTheme.typography.titleMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+        }
+      }
+      Spacer(Modifier.height(10.dp))
+    }
     Field(
       value = form.amount,
       onValueChange = { value -> viewModel.onForm { it.copy(amount = value) } },

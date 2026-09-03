@@ -57,11 +57,8 @@ fun MoreScreen(
       Entry(
         icon = BillIcons.Wallet,
         label = stringResource(R.string.credit_title),
-        detail = if (creditPaisa > 0) {
-          "Rs ${np.bill.core.money.formatMoney(creditPaisa)}"
-        } else {
-          stringResource(R.string.credit_detail)
-        },
+        subtitle = stringResource(R.string.credit_detail),
+        detail = "Rs ${np.bill.core.money.formatMoney(creditPaisa)}".takeIf { creditPaisa > 0 },
         onClick = onCreditBook,
       )
       Hairline()
@@ -120,7 +117,17 @@ private fun Entry(
   icon: ImageVector,
   label: String,
   onClick: () -> Unit,
+  /**
+   * A short value on the right, an amount and nothing longer.
+   *
+   * It sits beside the label with no width of its own, so a sentence here takes the
+   * whole row and squeezes the label out of existence. That is what happened to the
+   * credit book row: the label vanished and the row grew to two lines of trailing text.
+   * Anything that needs a sentence goes in [subtitle].
+   */
   detail: String? = null,
+  /** A line under the label, for a row whose name does not explain itself. */
+  subtitle: String? = null,
 ) {
   Row(
     Modifier
@@ -136,12 +143,22 @@ private fun Entry(
       tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(Modifier.width(14.dp))
-    Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+    Column(Modifier.weight(1f)) {
+      Text(label, style = MaterialTheme.typography.bodyLarge)
+      subtitle?.let {
+        Text(
+          it,
+          style = MaterialTheme.typography.labelMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    }
     detail?.let {
       Text(
         it,
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
       )
       Spacer(Modifier.width(8.dp))
     }

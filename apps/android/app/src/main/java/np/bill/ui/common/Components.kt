@@ -662,21 +662,30 @@ fun PaymentChip(
       .padding(horizontal = 10.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
+    /**
+     * One silhouette for every method.
+     *
+     * The logos arrive as different shapes — a circle for eSewa, a bare plane for
+     * Khalti, an arc for Fonepay — and drawn straight they read as four unrelated marks
+     * on one row. Each sits in the same rounded square now: the artwork on a neutral
+     * tile with a hair of inset so it never touches the edge, and the methods with no
+     * artwork wear the same square in their own colour.
+     */
     val logo = brandLogo(method)
-    if (logo != null) {
-      androidx.compose.foundation.Image(
-        painter = logo,
-        contentDescription = null,
-        modifier = Modifier.size(20.dp).clip(RoundedCornerShape(Radius.small)),
-      )
-    } else {
-      Box(
-        Modifier
-          .size(20.dp)
-          .clip(RoundedCornerShape(Radius.small))
-          .background(brand.tint),
-        contentAlignment = Alignment.Center,
-      ) {
+    Box(
+      Modifier
+        .size(BrandTile)
+        .clip(RoundedCornerShape(Radius.small))
+        .background(if (logo != null) MaterialTheme.colorScheme.surfaceContainerHigh else brand.tint),
+      contentAlignment = Alignment.Center,
+    ) {
+      if (logo != null) {
+        androidx.compose.foundation.Image(
+          painter = logo,
+          contentDescription = null,
+          modifier = Modifier.size(BrandTile).padding(2.dp),
+        )
+      } else {
         Text(
           brand.mark,
           style = MaterialTheme.typography.labelSmall,
@@ -724,3 +733,6 @@ fun paymentBrand(method: String): PaymentBrand = when (method) {
   "credit" -> PaymentBrand("Credit", "→", Color(0xFFB7791F))
   else -> PaymentBrand("Cash", "₨", Color(0xFF2F855A))
 }
+
+/** Every payment mark is this square, whether it carries artwork or a monogram. */
+private val BrandTile = 22.dp
