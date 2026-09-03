@@ -1,7 +1,7 @@
 {
-  "versionName": "1.0.0",
-  "versionCode": 1,
+  "versionName": "1.1.0",
+  "versionCode": 2,
   "minimumVersionCode": 1,
-  "apkUrl": "https://github.com/broisnischal/bill/releases/download/android-v1.0.0/bill-1.0.0.apk",
-  "notes": ""
+  "apkUrl": "https://github.com/broisnischal/bill/releases/download/android-v1.1.0/bill-1.1.0.apk",
+  "notes": "The credit book, for money a customer owes rather than money they paid. Pick the\nproduct and the customer the same way a bill does, and keep it out of the bill,\nwhere paid-in-full is now the only thing a bill can be.\nA bill shows the paper before it is issued. A number cannot be spent on a receipt\nsomebody changes their mind about, so the confirmation comes first.\nType an amount and the quantity follows it: Rs 200 of meat at Rs 1,300 a kilo is\n0.15 kg, and it works from either end. A unit that cannot be split floors instead\nof rounding, so Rs 480 at Rs 50 a piece is 9 pieces and not 9.6."
 }

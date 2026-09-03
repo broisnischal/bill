@@ -63,15 +63,28 @@ function notesFor(version) {
   const section = changelog.split(`\n## ${version}\n`)[1];
   if (!section) return "";
 
-  return section
+  const lines = section
     .split("\n## ")[0]
     .split("\n")
     .filter((line) => line.trim() && !line.startsWith("#"))
     .map((line) => line.replace(/^[-*]\s+/, "").trim())
     .filter((line) => !/^[0-9a-f]{7,40}:/.test(line))
-    .join("\n")
-    .slice(0, 600)
-    .trim();
+    .join("\n");
+
+  return trimToLine(lines, 600);
+}
+
+/**
+ * Cuts long notes back to the last whole line that fits.
+ *
+ * A hard slice ends the update sheet mid-word, which reads as something broken rather
+ * than something abbreviated.
+ */
+function trimToLine(text, limit) {
+  if (text.length <= limit) return text.trim();
+  const cut = text.slice(0, limit);
+  const lastBreak = cut.lastIndexOf("\n");
+  return (lastBreak > limit / 2 ? cut.slice(0, lastBreak) : cut).trim();
 }
 
 // Keeps the tag the release workflow looks for and the manifest in one place.
