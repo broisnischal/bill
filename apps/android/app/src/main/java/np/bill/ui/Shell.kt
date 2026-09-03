@@ -183,41 +183,31 @@ private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (
     for (tab in tabs) {
       val active = tab.route == selectedRoute
 
-      // Every slot is the same width, whichever one is chosen. The pill used to be sized
-      // by the label inside it, so picking a tab re-measured the whole row and every
-      // other icon slid sideways under the thumb that had just left one.
+      // One circle per tab, and the circle is the whole slot. It used to be centred
+      // inside a weight(1f) slot, which made it about 16dp from the bar's end while
+      // being 6dp from its top and bottom: an uneven ring, and that is what kept reading
+      // as a wrong border. Fixed slots spread across the row sit exactly 6dp in on every
+      // side, and 22 + 6 is the bar's own 28.
       Box(
         Modifier
-          .weight(1f)
-          .height(NavItem)
-          .clip(RoundedCornerShape(Radius.pill))
+          .size(NavItem)
+          .clip(CircleShape)
+          .background(if (active) tokens.ink else Color.Transparent)
           .clickable { onSelect(tab.route) },
         contentAlignment = Alignment.Center,
       ) {
-        // A circle, not a wide pill. At 52 by 36 the stadium was only half again as wide
-        // as it was tall, which the eye reads as a rounded square rather than a pill —
-        // and a squircle inside a stadium bar is the mismatch that looked wrong. A
-        // circle is unambiguous at this size, and 18 + 6 is still exactly the bar's 24.
-        Box(
-          Modifier
-            .size(NavItem)
-            .clip(CircleShape)
-            .background(if (active) tokens.ink else Color.Transparent),
-          contentAlignment = Alignment.Center,
+        BadgedBox(
+          badge = {
+            if (tab.badge > 0) Badge { Text(if (tab.badge > 99) "99+" else "${tab.badge}") }
+          },
         ) {
-          BadgedBox(
-            badge = {
-              if (tab.badge > 0) Badge { Text(if (tab.badge > 99) "99+" else "${tab.badge}") }
-            },
-          ) {
-            Icon(
-              tab.icon,
-              // The label is gone, so the icon carries the name for a screen reader.
-              contentDescription = stringResource(tab.labelRes),
-              tint = if (active) tokens.onInk else MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.size(NavIcon),
-            )
-          }
+          Icon(
+            tab.icon,
+            // The label is gone, so the icon carries the name for a screen reader.
+            contentDescription = stringResource(tab.labelRes),
+            tint = if (active) tokens.onInk else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(NavIcon),
+          )
         }
       }
     }
