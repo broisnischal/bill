@@ -62,6 +62,35 @@ class CreditBookViewModel @Inject constructor(
 
   fun itemSuggestions(term: String) = catalog.searchItems(term)
 
+  /**
+   * Everything the shop sells and everyone it has written down.
+   *
+   * For the two buttons on the form. Typing is faster when you know the name, and a list
+   * is the only option when you do not — a shopkeeper handing over goods on credit should
+   * not have to remember how they spelled a product last week.
+   */
+  val products = catalog.searchItems("")
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  val customers = catalog.searchCustomers("")
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  /** Products are unique by name, so the name is enough to find the one that was picked. */
+  fun useItemNamed(name: String) {
+    products.value.firstOrNull { it.name == name }?.let(::useItem)
+  }
+
+  fun useCustomerNamed(name: String) {
+    val match = customers.value.firstOrNull { it.name == name } ?: return
+    _form.update {
+      it.copy(
+        customerId = match.id,
+        buyerName = match.name,
+        buyerPhone = match.phone.orEmpty(),
+      )
+    }
+  }
+
   fun useBuyer(buyer: np.bill.ui.billing.RecentBuyer) = _form.update {
     it.copy(
       customerId = buyer.customerId,

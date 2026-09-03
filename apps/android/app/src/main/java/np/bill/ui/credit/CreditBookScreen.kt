@@ -219,7 +219,40 @@ private fun EntryRow(entry: CreditEntryEntity, onClick: () -> Unit) {
 private fun AddEntrySheet(viewModel: CreditBookViewModel, onDismiss: () -> Unit) {
   val form by viewModel.form.collectAsStateWithLifecycle()
   val regulars by viewModel.recentBuyers.collectAsStateWithLifecycle()
+  val products by viewModel.products.collectAsStateWithLifecycle()
+  val customers by viewModel.customers.collectAsStateWithLifecycle()
   val tokens = LocalTokens.current
+  var pickingProduct by remember { mutableStateOf(false) }
+  var pickingCustomer by remember { mutableStateOf(false) }
+
+  // The two lists, in the same sheet every picker in the app uses.
+  if (pickingProduct) {
+    np.bill.ui.common.ChoiceSheet(
+      title = stringResource(R.string.pick_product),
+      options = products.map { it.name },
+      selected = form.description,
+      searchable = true,
+      onPick = {
+        viewModel.useItemNamed(it)
+        pickingProduct = false
+      },
+      onDismiss = { pickingProduct = false },
+    )
+  }
+
+  if (pickingCustomer) {
+    np.bill.ui.common.ChoiceSheet(
+      title = stringResource(R.string.search_customers),
+      options = customers.map { it.name },
+      selected = form.buyerName,
+      searchable = true,
+      onPick = {
+        viewModel.useCustomerNamed(it)
+        pickingCustomer = false
+      },
+      onDismiss = { pickingCustomer = false },
+    )
+  }
 
   FormSheet(
     title = stringResource(R.string.credit_add),
@@ -264,6 +297,15 @@ private fun AddEntrySheet(viewModel: CreditBookViewModel, onDismiss: () -> Unit)
       value = form.buyerName,
       onValueChange = { value -> viewModel.onForm { it.copy(buyerName = value) } },
       label = stringResource(R.string.buyer_name),
+      trailingIcon = {
+        androidx.compose.material3.IconButton(onClick = { pickingCustomer = true }) {
+          androidx.compose.material3.Icon(
+            np.bill.ui.theme.BillIcons.Users,
+            contentDescription = stringResource(R.string.search_customers),
+            tint = MaterialTheme.colorScheme.primary,
+          )
+        }
+      },
     )
 
     Field(
@@ -271,6 +313,15 @@ private fun AddEntrySheet(viewModel: CreditBookViewModel, onDismiss: () -> Unit)
       onValueChange = { value -> viewModel.onForm { it.copy(description = value) } },
       label = stringResource(R.string.credit_what),
       hint = stringResource(R.string.credit_what_hint),
+      trailingIcon = {
+        androidx.compose.material3.IconButton(onClick = { pickingProduct = true }) {
+          androidx.compose.material3.Icon(
+            np.bill.ui.theme.BillIcons.Package,
+            contentDescription = stringResource(R.string.pick_product),
+            tint = MaterialTheme.colorScheme.primary,
+          )
+        }
+      },
     )
 
     // What the shop already sells, matched against what is being typed. Picking one
