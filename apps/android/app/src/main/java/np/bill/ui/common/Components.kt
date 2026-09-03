@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -440,6 +441,8 @@ fun QuantityStepper(
   onValueChange: (String) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  // Always present rather than appearing when there is something to clear: a button that
+  // comes and goes moves the number under the thumb reaching for it.
   val tokens = LocalTokens.current
   val shape = RoundedCornerShape(Radius.large)
   val milli = np.bill.core.money.parseQuantityMilli(value)
@@ -486,14 +489,14 @@ fun QuantityStepper(
         singleLine = true,
         // titleMedium, not titleLarge: a reverse-calculated quantity is "0.076", and at
         // display weight that does not fit a box this row can spare the width for.
-        textStyle = MaterialTheme.typography.titleMedium.copy(
+        textStyle = MaterialTheme.typography.titleLarge.copy(
           color = MaterialTheme.colorScheme.onSurface,
           textAlign = TextAlign.Center,
         ),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
         keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
         modifier = Modifier
-          .width(NumberWidth)
+          .weight(1f)
           .onFocusChanged { focus ->
             if (focus.isFocused) {
               field = field.copy(
@@ -507,6 +510,20 @@ fun QuantityStepper(
         icon = np.bill.ui.theme.BillIcons.Plus,
         enabled = true,
         onClick = { step(1000L) },
+      )
+
+      Box(
+        Modifier
+          .fillMaxHeight()
+          .width(1.dp)
+          .padding(vertical = 10.dp)
+          .background(tokens.border),
+      )
+
+      StepButton(
+        icon = np.bill.ui.theme.BillIcons.X,
+        enabled = value.isNotEmpty(),
+        onClick = { onValueChange("") },
       )
     }
 
@@ -795,5 +812,4 @@ fun paymentBrand(method: String): PaymentBrand = when (method) {
 private val BrandTile = 22.dp
 
 /** The stepper, sized for a thumb rather than for the space left over. */
-private val StepButtonWidth = 42.dp
-private val NumberWidth = 62.dp
+private val StepButtonWidth = 44.dp

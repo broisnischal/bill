@@ -634,6 +634,8 @@ private fun LineEditor(
     }
 
     Row(verticalAlignment = Alignment.Top) {
+      // The quantity has the row to itself now, sharing it only with the unit. It is the
+      // field a counter touches most and it was the one squeezed smallest.
       QuantityStepper(
         value = line.quantity,
         onValueChange = { value ->
@@ -642,6 +644,7 @@ private fun LineEditor(
           typed = null
           onChange { it.copy(quantity = value) }
         },
+        modifier = Modifier.weight(1f),
       )
       Spacer(Modifier.width(8.dp))
       CompactPicker(
@@ -649,24 +652,19 @@ private fun LineEditor(
         options = np.bill.core.unit.Unit.codes,
         onPick = { unit -> onChange { it.copy(unit = unit) } },
         title = stringResource(R.string.unit),
-        modifier = Modifier.width(80.dp),
-      )
-      Spacer(Modifier.width(8.dp))
-      Field(
-        value = line.rate,
-        onValueChange = { value ->
-          typed = null
-          onChange { it.copy(rate = value) }
-        },
-        label = stringResource(R.string.rate),
-        // Label-free like the two beside it: a floated label pushes its box down inside
-        // the row, which is what left the rate sitting lower than the quantity.
-        showLabel = false,
-        placeholder = stringResource(R.string.rate),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.width(96.dp),
       )
     }
+
+    Field(
+      value = line.rate,
+      onValueChange = { value ->
+        typed = null
+        onChange { it.copy(rate = value) }
+      },
+      label = stringResource(R.string.rate),
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+    )
 
     Row(verticalAlignment = Alignment.Top) {
       // Nothing is exempt from a tax nobody is charging. Hidden with the rest of VAT.

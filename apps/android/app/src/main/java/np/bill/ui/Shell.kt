@@ -236,8 +236,8 @@ private val GradientHeight = 210.dp
 /**
  * The circle behind the chosen icon, and the height of every slot.
  *
- * Half of it plus the bar's 6dp padding is Radius.bar, which is what keeps the gap
- * between the two curves even all the way round the corner.
+ * Half of it (22) plus the bar's 6dp padding is Radius.bar (28), which is what keeps the
+ * gap between the two curves even all the way round the corner.
  */
-private val NavItem = 36.dp
-private val NavIcon = 22.dp
+private val NavItem = 44.dp
+private val NavIcon = 24.dp

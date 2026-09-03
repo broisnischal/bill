@@ -278,12 +278,12 @@ object Radius {
   /**
    * A floating bar whose contents are pills inset by 6dp.
    *
-   * The indicator behind the chosen icon is 36dp tall, so its own radius is 18, and it
-   * sits 6dp in from the edge: 18 + 6. Get this wrong and the gap between the two curves
-   * changes as it goes round the corner, which is the thing that makes a nested rounded
-   * shape look off without anybody being able to say why.
+   * The circle behind the chosen icon is 44dp across, so its own radius is 22, and it
+   * sits 6dp in from the edge of the bar: 22 + 6 = 28. Get this wrong and the gap between
+   * the two curves widens or narrows as it travels round the corner, which is the thing
+   * that makes a nested rounded shape look off without anybody being able to say why.
    */
-  val bar = 24.dp
+  val bar = 28.dp
 
   /** A card. */
   val card = 24.dp
