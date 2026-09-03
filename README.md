@@ -6,33 +6,43 @@ Rules 2053 asks for, prints them on A4 or an 80mm thermal roll, archives a PDF o
 one, and pushes them to the IRD Central Billing Monitoring System.
 
 Built on [TanStarter](https://github.com/mugnavo/tanstarter): TanStack Start, Drizzle,
-Better Auth, Tailwind and shadcn on Base UI. PDFs are rendered by
-[takumi](https://takumi.kane.tw/docs/pdf/invoices), a wasm layout engine, so there is no
-headless browser on the server. Archived copies go to MinIO locally and to any S3 API in
-production.
+Better Auth, Tailwind and shadcn on Base UI, running on Cloudflare Workers with D1 and
+R2. PDFs are rendered by [takumi](https://takumi.kane.tw/docs/pdf/invoices), a wasm
+layout engine, so there is no headless browser on the server.
 
 ## Running it
 
 ```sh
 bun install
 cp .env.example .env          # then fill BETTER_AUTH_SECRET
-docker compose up -d          # Postgres on 5455, MinIO on 9002 (console 9003)
-bun run db migrate
-bun run seed                  # a shop with items and customers, ready to bill
+bun run db generate           # only after changing the schema
 bun run dev                   # http://localhost:3000
 ```
 
-Sign up, register the business, and the biller is one click away.
+Nothing to bring up. `bun run dev` runs the Worker locally and wrangler creates the D1
+database and the R2 bucket on disk under `.wrangler` the first time they are touched.
+`bun run seed` writes `drizzle/seed.sql` (a shop with items and customers) for
+`wrangler d1 execute` to apply.
+
+Sign in with a mobile number, register the business, and the biller is one click away.
 
 ### Nothing outside the machine
 
 Development touches no third-party service and costs nothing to run.
 
-**No SMS account.** With `SPARROW_SMS_TOKEN` unset, an OTP is never sent. The code is
-logged, and `GET /api/v1/dev/otp?phone=98XXXXXXXX` hands it back so the Android app can
-fill it in for you. That route answers only when there is no gateway configured and the
-build is not production; anywhere real it 404s. Verification itself is untouched, so the
-path being exercised locally is the one that runs in production.
+**No WhatsApp or SMS account.** With no `OPENWA_*` and no `SPARROW_SMS_TOKEN`, a code is
+never sent. It is logged, and `GET /api/v1/dev/otp?phone=98XXXXXXXX` hands it back so the
+Android app can fill it in. That route answers only for the numbers named in
+`OTP_DEBUG_PHONES`, because a readable code is a way to sign in as whoever the number
+belongs to; an empty list means nobody. Verification itself is untouched, so the path
+being exercised locally is the one that runs in production.
+
+**How a code goes out.** WhatsApp first, through an [OpenWA](https://docs.open-wa.org)
+server, which costs nothing; then Sparrow SMS if a token is configured; then held for the
+route above. A shopkeeper has WhatsApp before they have anything else, and the thing on
+the other end is one linked account driving `web.whatsapp.com`, so it fails in ways a
+gateway does not: `src/lib/sms/openwa.ts` reports which way. Nothing throws, because a
+dead session must not stop somebody reaching the code screen.
 
 **No tax authority.** With `IRD_CBMS_LIVE=false`, which is the default, a bill still moves
 to `synced` and the push still lands in the audit trail, but no request leaves the
@@ -40,7 +50,8 @@ machine. The stored response reads `{"mocked":true}`, so an audit trail from a d
 database can never be mistaken for a real filing. Set `IRD_CBMS_LIVE=true` to reach the
 IRD sandbox at `cbapitest.ird.gov.np`.
 
-**No S3 bill.** `docker compose` brings up MinIO and the archive writes to it.
+**No storage bill.** The R2 binding resolves to a local directory, so the archive writes
+to disk.
 
 `bun run seed` is idempotent and refuses to run against a database that is not on
 localhost.
@@ -154,7 +165,9 @@ the IP and the user agent.
 **Archive.** The moment a bill is issued its A4 PDF is rendered and written to object
 storage, keyed `stores/{store}/{fiscal year}/{number}-a4.pdf`, with the SHA-256 stored on
 the row so tampering is detectable. Rendering is deterministic: the same bill produces
-the same bytes.
+the same bytes. The papers a business uploads for review sit in the same bucket under
+`stores/{store}/documents/`, and nothing hands out a URL for either: a reviewer's browser
+gets the bytes through the Worker against their own session, or it gets nothing.
 
 **CBMS.** VAT-registered stores can turn on real-time sync in settings. Bills go to
 `/api/bill` and credit notes to `/api/billreturn` with the field names the IRD's API
@@ -189,24 +202,27 @@ raw count of documents issued.
 
 ```sh
 bun run lint       # type-aware lint and type check
-bun run test       # unit tests, plus integration tests against Postgres and MinIO
+bun run test       # unit tests
 bun run test:e2e   # full browser journey: signup, onboarding, bill, print, reports
 ```
 
-The integration test writes to the database from `.env` and skips itself if nothing is
-listening. The E2E run builds for production and uses `.env.e2e`, which points at a
-separate `bill_e2e` database and bucket; create it with
-`docker exec bill-postgres psql -U postgres -c "CREATE DATABASE bill_e2e"` and migrate it
-with `DATABASE_URL=... bun run db migrate`.
+`ServerParityTest` in the Android module is generated from the server's own
+`computeInvoice`, `amountInWords` and `toBsString`, so the device's calculator and the
+server's cannot drift without a test going red.
 
 ## Configuration
 
-| Variable                                                                                                   | What it is                                                         |
-| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `DATABASE_URL`                                                                                             | Postgres connection string                                         |
-| `BETTER_AUTH_SECRET`                                                                                       | Session secret, also derives the CBMS credential key               |
-| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_FORCE_PATH_STYLE` | Object storage for archived PDFs                                   |
-| `IRD_CBMS_BILL_URL`, `IRD_CBMS_BILL_RETURN_URL`                                                            | CBMS endpoints; point them at `cbapitest.ird.gov.np` while testing |
+The database and the bucket are bindings in `wrangler.jsonc`, not variables: `DB` for D1
+and `ARCHIVE` for R2. What is left is configuration.
+
+| Variable                                                 | What it is                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------ |
+| `BETTER_AUTH_SECRET`                                     | Session secret, also derives the CBMS credential key               |
+| `OPENWA_BASE_URL`, `OPENWA_API_KEY`, `OPENWA_SESSION_ID` | The OpenWA server a verification code is sent through              |
+| `SPARROW_SMS_TOKEN`, `SPARROW_SMS_FROM`                  | SMS gateway, tried after WhatsApp                                  |
+| `OTP_DEBUG`, `OTP_DEBUG_PHONES`                          | Whose code `/api/v1/dev/otp` hands back. Empty list means nobody   |
+| `ADMIN_PHONES`                                           | Who may review businesses at `/admin`                              |
+| `IRD_CBMS_BILL_URL`, `IRD_CBMS_BILL_RETURN_URL`          | CBMS endpoints; point them at `cbapitest.ird.gov.np` while testing |
 
 Rotating `BETTER_AUTH_SECRET` invalidates stored CBMS passwords, which then have to be
 re-entered in settings.

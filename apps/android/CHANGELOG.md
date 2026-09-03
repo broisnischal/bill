@@ -1,5 +1,13 @@
 # @bill/android
 
+## 1.1.1
+
+### Patch Changes
+
+- The sign-in says the code comes on WhatsApp, because it does now. When the
+  WhatsApp message does not go out, the screen says that rather than blaming an
+  SMS that was never going to be sent.
+
 ## 1.1.0
 
 ### Minor Changes
