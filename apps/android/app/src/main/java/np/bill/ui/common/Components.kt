@@ -32,11 +32,14 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -464,9 +467,22 @@ fun QuantityStepper(
         onClick = { step(-1000L) },
       )
 
+      /**
+       * Tapping the number selects all of it, so the next keypress replaces it.
+       *
+       * That is the clear: a shopkeeper changing 12 to 3 taps once and types, instead of
+       * backspacing twice. A separate clear button would have to come out of the width
+       * this row shares with the unit and the rate.
+       */
+      var field by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(value)) }
+      if (field.text != value) field = field.copy(text = value)
+
       androidx.compose.foundation.text.BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = field,
+        onValueChange = {
+          field = it
+          onValueChange(it.text)
+        },
         singleLine = true,
         // titleMedium, not titleLarge: a reverse-calculated quantity is "0.076", and at
         // display weight that does not fit a box this row can spare the width for.
@@ -476,7 +492,15 @@ fun QuantityStepper(
         ),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
         keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-        modifier = Modifier.width(56.dp),
+        modifier = Modifier
+          .width(NumberWidth)
+          .onFocusChanged { focus ->
+            if (focus.isFocused) {
+              field = field.copy(
+                selection = androidx.compose.ui.text.TextRange(0, field.text.length),
+              )
+            }
+          },
       )
 
       StepButton(
@@ -769,3 +793,7 @@ fun paymentBrand(method: String): PaymentBrand = when (method) {
 
 /** Every payment mark is this square, whether it carries artwork or a monogram. */
 private val BrandTile = 22.dp
+
+/** The stepper, sized for a thumb rather than for the space left over. */
+private val StepButtonWidth = 42.dp
+private val NumberWidth = 62.dp

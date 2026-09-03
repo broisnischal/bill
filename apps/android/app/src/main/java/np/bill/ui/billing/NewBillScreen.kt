@@ -649,7 +649,7 @@ private fun LineEditor(
         options = np.bill.core.unit.Unit.codes,
         onPick = { unit -> onChange { it.copy(unit = unit) } },
         title = stringResource(R.string.unit),
-        modifier = Modifier.width(88.dp),
+        modifier = Modifier.width(80.dp),
       )
       Spacer(Modifier.width(8.dp))
       Field(
@@ -707,11 +707,22 @@ private fun LineEditor(
             // which is a rupee and twenty off what the customer asked for; rounding
             // lands on the nearest amount the line can actually add up to.
             rate != null && rate > 0 -> onChange {
-              it.copy(
-                quantity = np.bill.core.money.formatQuantity(
-                  np.bill.core.money.roundQuantityMilli((wanted * 1000 + rate / 2) / rate),
-                ),
-              )
+              /**
+               * A countable unit floors; a measure rounds.
+               *
+               * Ask for 480 rupees of pencils at 50 and you get nine and 450 rupees back
+               * in change, not 9.6 pencils. Rounding up would hand over a tenth of a
+               * pencil nobody has, and rounding to the nearest would sometimes charge for
+               * ten. Ask for 480 of something sold by the kilo and 9.6 kg is exactly
+               * right.
+               */
+              val exact = wanted * 1000 / rate
+              val quantityMilli = if (np.bill.core.unit.Unit.isFractional(line.unit)) {
+                np.bill.core.money.roundQuantityMilli((wanted * 1000 + rate / 2) / rate)
+              } else {
+                (exact / 1000) * 1000
+              }
+              it.copy(quantity = np.bill.core.money.formatQuantity(quantityMilli))
             }
             quantity != null && quantity > 0 -> onChange {
               it.copy(

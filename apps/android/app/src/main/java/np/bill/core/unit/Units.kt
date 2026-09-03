@@ -39,6 +39,18 @@ data class Unit(val code: String, val english: String, val nepali: String) {
 
     val codes = all.map(Unit::code)
 
+    /**
+     * Whether half of one of these means anything.
+     *
+     * Nobody sells 9.6 pencils. Working an amount back into a quantity has to know the
+     * difference: 480 rupees of something at 50 is nine pieces and 450 rupees, not 9.6
+     * pieces and 480. Weight, volume, length and time divide; pieces, packets, boxes and
+     * pairs do not.
+     *
+     * Unknown codes are treated as divisible, because a shop that typed its own unit is
+     * more likely to have meant a measure than a countable thing.
+     */
+
     fun of(code: String): Unit? = all.firstOrNull { it.code.equals(code, ignoreCase = true) }
 
     /** What to show in a list: the code is what prints, the name is what explains it. */
@@ -47,6 +59,17 @@ data class Unit(val code: String, val english: String, val nepali: String) {
       return "${unit.code} · ${if (nepali) unit.nepali else unit.english}"
     }
 
+    /**
+     * Whether half of one of these means anything.
+     *
+     * Nobody sells 9.6 pencils. Working an amount back into a quantity has to know the
+     * difference: 480 rupees of something at 50 is nine pieces and 450 rupees, not 9.6
+     * pieces and 480. Weight, volume, length and time divide; pieces, packets, boxes and
+     * pairs do not.
+     *
+     * An unknown code is treated as divisible, because a shop that typed its own unit is
+     * likelier to have meant a measure than a countable thing.
+     */
     fun isFractional(code: String): Boolean = of(code)?.fractional ?: true
   }
 }
