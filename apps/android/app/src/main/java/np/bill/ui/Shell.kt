@@ -174,6 +174,14 @@ private fun FloatingNav(
   Box(
     Modifier
       .fillMaxWidth()
+      // No seam where the bar's strip meets the page. The slot ramps from nothing at the
+      // top to the page colour at the very bottom, so the bar reads as floating over the
+      // screen rather than sitting on a band of its own.
+      .background(
+        Brush.verticalGradient(
+          listOf(Color.Transparent, MaterialTheme.colorScheme.background),
+        ),
+      )
       .navigationBarsPadding()
       .padding(horizontal = Gutter, vertical = 8.dp),
     contentAlignment = Alignment.Center,

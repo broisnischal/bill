@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -813,3 +814,28 @@ private val BrandTile = 22.dp
 
 /** The stepper, sized for a thumb rather than for the space left over. */
 private val StepButtonWidth = 44.dp
+
+/**
+ * Rows dissolving into the foot of a list rather than stopping at it.
+ *
+ * A scrolling surface that ends in a straight line above the tab bar reads as content
+ * somebody cut off, and the eye goes looking for the rest of it. A short ramp to the
+ * surface's own colour says the list carries on instead.
+ *
+ * An overlay inside the list's own Box, so it takes no touches: a Box carrying only a
+ * background does not consume gestures.
+ */
+@Composable
+fun BoxScope.BottomFade(height: androidx.compose.ui.unit.Dp = 28.dp) {
+  Box(
+    Modifier
+      .align(Alignment.BottomCenter)
+      .fillMaxWidth()
+      .height(height)
+      .background(
+        androidx.compose.ui.graphics.Brush.verticalGradient(
+          listOf(Color.Transparent, MaterialTheme.colorScheme.surface),
+        ),
+      ),
+  )
+}

@@ -49,6 +49,7 @@ import androidx.compose.foundation.layout.Box
 import np.bill.ui.common.BottomAction
 import np.bill.ui.common.DeltaPill
 import np.bill.ui.common.MoneyDisplay
+import np.bill.ui.common.BottomFade
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.Panel
 import np.bill.ui.theme.Gutter
@@ -201,19 +202,28 @@ fun BillsScreen(
       Modifier
         .weight(1f)
         .padding(top = 4.dp)
-        .clip(RoundedCornerShape(topStart = Radius.card, topEnd = Radius.card))
+        .clip(RoundedCornerShape(Radius.card))
         .background(MaterialTheme.colorScheme.surface),
     ) {
       if (state.visible.isEmpty()) {
         EmptyState(stringResource(R.string.no_bills_yet))
       } else {
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(
+          Modifier.fillMaxSize(),
+          // The list scrolls the height of the fade further, so the last row can come
+          // out from under the ramp rather than sitting half dissolved forever.
+          contentPadding = PaddingValues(bottom = 28.dp),
+        ) {
           items(state.visible, key = { it.id }, contentType = { "bill" }) { bill ->
             BillRow(bill = bill, onClick = { onOpenBill(bill.id) })
             Hairline(Modifier.padding(start = 68.dp))
           }
         }
       }
+
+      // The rows fade into the foot of the card rather than stopping at a straight edge
+      // above the tab bar, which read as content someone had cut off.
+      BottomFade()
     }
 
     BottomAction(text = stringResource(R.string.new_bill), onClick = onNewBill)

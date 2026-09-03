@@ -68,6 +68,7 @@ import np.bill.scan.CodeScanner
 import np.bill.scan.ScanTarget
 import np.bill.ui.common.ActionSheet
 import np.bill.ui.common.ChoiceChip
+import np.bill.ui.common.BottomFade
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.BottomAction
 import np.bill.ui.common.Field
@@ -132,13 +133,18 @@ fun ItemsScreen(
         Modifier
           .weight(1f)
           .padding(top = 4.dp)
-          .clip(RoundedCornerShape(topStart = Radius.card, topEnd = Radius.card))
+          .clip(RoundedCornerShape(Radius.card))
           .background(MaterialTheme.colorScheme.surface),
       ) {
       if (items.isEmpty()) {
         EmptyState(stringResource(R.string.no_items_yet))
       } else {
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(
+          Modifier.fillMaxSize(),
+          // The list scrolls the height of the fade further, so the last row can come
+          // out from under the ramp rather than sitting half dissolved forever.
+          contentPadding = PaddingValues(bottom = 28.dp),
+        ) {
           items(items, key = { it.id }, contentType = { "item" }) { item ->
             ItemRow(
               item = item,
@@ -157,6 +163,10 @@ fun ItemsScreen(
           }
         }
       }
+
+      // The rows fade into the foot of the card rather than stopping at a straight
+      // edge above the tab bar, which read as content someone had cut off.
+      BottomFade()
       }
 
       BottomAction(
