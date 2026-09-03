@@ -26,7 +26,6 @@ import np.bill.ui.home.HomeScreen
 import np.bill.ui.payments.PaymentQrScreen
 import np.bill.ui.payments.PaymentQrViewModel
 import np.bill.ui.payments.ShowQrSheet
-import np.bill.ui.dues.DuesScreen
 import np.bill.ui.reports.ReportsScreen
 import np.bill.ui.settings.BusinessSettingsScreen
 import np.bill.ui.settings.MoreScreen
@@ -105,7 +104,6 @@ fun BusinessHome(
     selected == Tabs.customers.route -> stringResource(R.string.nav_customers)
     selected == Tabs.more.route -> when (morePage) {
       MorePage.CREDIT -> stringResource(R.string.credit_title)
-      MorePage.DUES -> stringResource(R.string.dues_title)
       MorePage.REPORTS -> stringResource(R.string.reports_title)
       MorePage.BUSINESS -> stringResource(R.string.business_settings)
       MorePage.PREFERENCES -> stringResource(R.string.settings)
@@ -137,7 +135,7 @@ fun BusinessHome(
         miti = state.miti,
         todayPaisa = state.todayPaisa,
         todayCount = state.todayCount,
-        duePaisa = state.duePaisa,
+        duePaisa = creditOutstanding,
         pendingSync = state.pendingSync,
         recent = state.recent,
         templates = templates,
@@ -155,7 +153,7 @@ fun BusinessHome(
         },
         onDues = {
           selected = Tabs.more.route
-          morePage = MorePage.DUES
+          morePage = MorePage.CREDIT
         },
         onBills = { selected = Tabs.bills.route },
         onShowQr = { showQr = true },
@@ -175,7 +173,6 @@ fun BusinessHome(
       )
       Tabs.more.route -> when (page) {
         MorePage.CREDIT -> np.bill.ui.credit.CreditBookScreen(modifier = modifier)
-        MorePage.DUES -> DuesScreen(modifier = modifier)
         MorePage.REPORTS -> ReportsScreen(modifier = modifier)
         MorePage.BUSINESS -> BusinessSettingsScreen(
           onBack = { morePage = MorePage.HUB },
@@ -193,13 +190,11 @@ fun BusinessHome(
         )
         MorePage.HUB -> MoreScreen(
           onCreditBook = { morePage = MorePage.CREDIT },
-          onDues = { morePage = MorePage.DUES },
           onReports = { morePage = MorePage.REPORTS },
           onBusiness = { morePage = MorePage.BUSINESS },
           onPreferences = { morePage = MorePage.PREFERENCES },
           onWebLogin = { morePage = MorePage.WEB_LOGIN },
           onPaymentQr = { morePage = MorePage.PAYMENT_QR },
-          duesPaisa = state.duePaisa,
           creditPaisa = creditOutstanding,
           modifier = modifier,
         )
@@ -237,5 +232,5 @@ fun BusinessHome(
 
 /** Where the More tab currently is. It is a small stack, not a second navigation graph. */
 private enum class MorePage {
-  HUB, CREDIT, DUES, REPORTS, BUSINESS, PREFERENCES, WEB_LOGIN, PAYMENT_QR
+  HUB, CREDIT, REPORTS, BUSINESS, PREFERENCES, WEB_LOGIN, PAYMENT_QR
 }

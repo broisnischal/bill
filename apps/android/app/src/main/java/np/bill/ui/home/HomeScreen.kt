@@ -211,7 +211,7 @@ fun HomeScreen(
           Spacer(Modifier.size(12.dp))
           Column(Modifier.weight(1f)) {
             Text(
-              stringResource(R.string.total_due),
+              stringResource(R.string.credit_outstanding),
               style = MaterialTheme.typography.labelMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

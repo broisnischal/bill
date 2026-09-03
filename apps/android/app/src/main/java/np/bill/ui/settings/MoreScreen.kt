@@ -35,13 +35,11 @@ import np.bill.ui.common.Panel
 @Composable
 fun MoreScreen(
   onCreditBook: () -> Unit,
-  onDues: () -> Unit,
   onReports: () -> Unit,
   onBusiness: () -> Unit,
   onPreferences: () -> Unit,
   onWebLogin: () -> Unit,
   onPaymentQr: () -> Unit,
-  duesPaisa: Long,
   creditPaisa: Long,
   modifier: Modifier = Modifier,
 ) {
@@ -60,17 +58,6 @@ fun MoreScreen(
         subtitle = stringResource(R.string.credit_detail),
         detail = "Rs ${np.bill.core.money.formatMoney(creditPaisa)}".takeIf { creditPaisa > 0 },
         onClick = onCreditBook,
-      )
-      Hairline()
-      Entry(
-        icon = BillIcons.Clock,
-        label = stringResource(R.string.dues_title),
-        detail = if (duesPaisa > 0) {
-          "Rs ${np.bill.core.money.formatMoney(duesPaisa)}"
-        } else {
-          null
-        },
-        onClick = onDues,
       )
       Hairline()
       Entry(
