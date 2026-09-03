@@ -31,8 +31,9 @@ data class BillWithDue(
     PaymentQrEntity::class,
     BillTemplateEntity::class,
     BillTemplateLineEntity::class,
+    KarobarEntryEntity::class,
   ],
-  version = 10,
+  version = 11,
   exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -44,6 +45,7 @@ abstract class BillDatabase : RoomDatabase() {
   abstract fun storeData(): StoreDataDao
   abstract fun paymentQrs(): PaymentQrDao
   abstract fun templates(): TemplateDao
+  abstract fun karobar(): KarobarDao
 
   companion object {
     /**
@@ -132,6 +134,20 @@ abstract class BillDatabase : RoomDatabase() {
           "CREATE INDEX IF NOT EXISTS index_bill_template_line_templateId " +
             "ON bill_template_line (templateId)",
         )
+      }
+    }
+
+    /** The credit book: what a customer took and has not paid for yet. */
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+      override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL(
+          "CREATE TABLE IF NOT EXISTS karobar_entry (" +
+            "id TEXT NOT NULL PRIMARY KEY, customerId TEXT, buyerName TEXT NOT NULL, " +
+            "buyerPhone TEXT, description TEXT NOT NULL, amountPaisa INTEGER NOT NULL, " +
+            "note TEXT, miti TEXT NOT NULL, createdAt INTEGER NOT NULL, settledAt INTEGER)",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_karobar_entry_settledAt ON karobar_entry (settledAt)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_karobar_entry_customerId ON karobar_entry (customerId)")
       }
     }
 

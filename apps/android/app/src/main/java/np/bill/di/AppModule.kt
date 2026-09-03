@@ -47,6 +47,7 @@ object AppModule {
         BillDatabase.MIGRATION_7_8,
         BillDatabase.MIGRATION_8_9,
         BillDatabase.MIGRATION_9_10,
+        BillDatabase.MIGRATION_10_11,
       )
       .build()
 
@@ -67,6 +68,9 @@ object AppModule {
 
   @Provides
   fun templateDao(database: BillDatabase) = database.templates()
+
+  @Provides
+  fun karobarDao(database: BillDatabase) = database.karobar()
 
   @Provides
   @Singleton

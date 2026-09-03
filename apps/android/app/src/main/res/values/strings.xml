@@ -355,6 +355,28 @@
 
     <string name="numbers_refused">The office has not sent bill numbers yet. It usually means the business is still being reviewed.</string>
 
+    <string name="preview_title">Check the bill</string>
+    <string name="preview_subtitle">Once it is made it cannot be edited, only reversed with a credit note.</string>
+    <string name="preview_confirm">Yes, make the bill</string>
+    <string name="preview_back">Change something</string>
+    <string name="preview_for">For %1$s</string>
+
+    <string name="karobar_title">Karobar</string>
+    <string name="karobar_detail">What customers took and have not paid for</string>
+    <string name="karobar_outstanding">Still owed</string>
+    <string name="karobar_people">%1$d entries open</string>
+    <string name="karobar_empty">Nothing owed. When someone takes goods without paying, write it here instead of making a bill.</string>
+    <string name="karobar_settled">Paid</string>
+    <string name="karobar_add">Add to the book</string>
+    <string name="karobar_add_detail">A bill is for money you have taken. This is for money you are owed.</string>
+    <string name="karobar_what">What they took</string>
+    <string name="karobar_what_hint">Two kg masu, a gas cylinder, whatever it was</string>
+    <string name="karobar_note_hint">When they said they would pay, for instance</string>
+    <string name="karobar_owes">Owes Rs %1$s</string>
+    <string name="karobar_paid_on">Rs %1$s, paid</string>
+    <string name="karobar_mark_paid">They paid</string>
+    <string name="karobar_reopen">Still owed</string>
+
     <!-- Bill templates -->
     <string name="template_empty">Nothing on this bill to save.</string>
 

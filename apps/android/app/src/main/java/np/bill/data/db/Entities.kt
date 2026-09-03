@@ -154,6 +154,34 @@ data class ItemEntity(
 )
 
 /**
+ * The credit book: what somebody took and has not paid for.
+ *
+ * Every shop in Nepal keeps one, usually in a notebook by the till. It is deliberately
+ * not a bill: a bill takes a number out of a government series and is immutable from the
+ * moment it is issued, and neither of those things is true of "Ram took two kilos, he
+ * will settle on Friday". When the money comes in, the shop makes a bill for it and
+ * closes the entry.
+ *
+ * The customer is kept as a name rather than only as an id, because half of these are
+ * people the shop has never written down and is not about to stop and add.
+ */
+@Entity(tableName = "karobar_entry", indices = [Index("settledAt"), Index("customerId")])
+data class KarobarEntryEntity(
+  @PrimaryKey val id: String,
+  val customerId: String? = null,
+  val buyerName: String,
+  val buyerPhone: String? = null,
+  /** What was taken, in the shop's own words. */
+  val description: String,
+  val amountPaisa: Long,
+  val note: String? = null,
+  val miti: String,
+  val createdAt: Long,
+  /** Null while it is still owed. Set when the shop was paid. */
+  val settledAt: Long? = null,
+)
+
+/**
  * A basket the shop bills over and over.
  *
  * A meat counter rings up "khasi ko masu" forty times a day with only the weight

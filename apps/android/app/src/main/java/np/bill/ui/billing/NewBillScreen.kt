@@ -119,6 +119,7 @@ fun NewBillScreen(
   val savedQrs by viewModel.paymentQrs.collectAsStateWithLifecycle()
   val regulars by viewModel.recentBuyers.collectAsStateWithLifecycle()
   var showingQr by remember { mutableStateOf<np.bill.data.repo.SavedPaymentQr?>(null) }
+  var previewing by remember { mutableStateOf(false) }
 
   var cameraGranted by remember {
     mutableStateOf(
@@ -191,7 +192,10 @@ fun NewBillScreen(
           Spacer(Modifier.height(12.dp))
           PrimaryButton(
             text = stringResource(R.string.save_bill),
-            onClick = { viewModel.save(onDone) },
+            // Shows the paper first. A bill cannot be edited once it is issued — the
+            // only way back is a credit note in its own series — so the last thing
+            // before that door closes is a look at what will print.
+            onClick = { previewing = true },
             enabled = state.canSave,
             loading = state.saving,
           )
@@ -360,42 +364,11 @@ fun NewBillScreen(
             }
           }
 
-          Spacer(Modifier.height(20.dp))
-          Text(stringResource(R.string.how_paid), style = MaterialTheme.typography.labelLarge)
-          Spacer(Modifier.height(8.dp))
-          Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ChoiceCard(
-              label = stringResource(R.string.paid_full),
-              selected = state.settlement == Settlement.PAID,
-              onClick = { viewModel.onSettlement(Settlement.PAID) },
-              modifier = Modifier.weight(1f),
-            )
-            ChoiceCard(
-              label = stringResource(R.string.owed),
-              selected = state.settlement == Settlement.OWED,
-              onClick = { viewModel.onSettlement(Settlement.OWED) },
-              modifier = Modifier.weight(1f),
-            )
-          }
-
-          if (state.onCredit) {
-            Spacer(Modifier.height(8.dp))
-            Field(
-              value = state.paidNow,
-              onValueChange = viewModel::onPaidNow,
-              label = stringResource(R.string.paid_now),
-              placeholder = "0",
-              keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-              hint = stringResource(R.string.owes_now, formatMoney(state.owedPaisa)),
-            )
-            BsDateField(
-              value = state.dueMiti,
-              onValueChange = viewModel::onDueMiti,
-              label = stringResource(R.string.due_date),
-              modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(12.dp))
-          }
+          // Paid or owed is gone from here. A bill is the record of a sale that was
+          // settled: it carries a number from a government series, it is immutable once
+          // issued, and it can only be undone with a credit note. Money somebody owes is
+          // not that — it is a running account, and it lives in Karobar until it is
+          // paid, at which point a bill is made for it.
 
           Spacer(Modifier.height(8.dp))
           Text(stringResource(R.string.payment_method), style = MaterialTheme.typography.labelLarge)
@@ -420,6 +393,17 @@ fun NewBillScreen(
         }
       }
     }
+  }
+
+  if (previewing) {
+    BillPreviewSheet(
+      state = state,
+      onConfirm = {
+        previewing = false
+        viewModel.save(onDone)
+      },
+      onDismiss = { previewing = false },
+    )
   }
 
   showingQr?.let { qr ->

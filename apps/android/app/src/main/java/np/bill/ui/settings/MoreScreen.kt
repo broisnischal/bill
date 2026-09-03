@@ -34,6 +34,7 @@ import np.bill.ui.common.Panel
  */
 @Composable
 fun MoreScreen(
+  onKarobar: () -> Unit,
   onDues: () -> Unit,
   onReports: () -> Unit,
   onBusiness: () -> Unit,
@@ -41,6 +42,7 @@ fun MoreScreen(
   onWebLogin: () -> Unit,
   onPaymentQr: () -> Unit,
   duesPaisa: Long,
+  karobarPaisa: Long,
   modifier: Modifier = Modifier,
 ) {
   Column(
@@ -50,6 +52,19 @@ fun MoreScreen(
       .padding(16.dp),
   ) {
     Panel {
+      // First in the hub: on most counters the credit book is opened more often than
+      // anything else here.
+      Entry(
+        icon = BillIcons.Wallet,
+        label = stringResource(R.string.karobar_title),
+        detail = if (karobarPaisa > 0) {
+          "Rs ${np.bill.core.money.formatMoney(karobarPaisa)}"
+        } else {
+          stringResource(R.string.karobar_detail)
+        },
+        onClick = onKarobar,
+      )
+      Hairline()
       Entry(
         icon = BillIcons.Clock,
         label = stringResource(R.string.dues_title),

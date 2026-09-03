@@ -216,6 +216,32 @@ interface LeaseDao {
 }
 
 @Dao
+interface KarobarDao {
+
+  /** Open first and oldest first: the money that has been out longest is what to chase. */
+  @Query("SELECT * FROM karobar_entry WHERE settledAt IS NULL ORDER BY createdAt")
+  fun open(): Flow<List<KarobarEntryEntity>>
+
+  @Query("SELECT * FROM karobar_entry WHERE settledAt IS NOT NULL ORDER BY settledAt DESC LIMIT 50")
+  fun settled(): Flow<List<KarobarEntryEntity>>
+
+  @Query("SELECT COALESCE(SUM(amountPaisa), 0) FROM karobar_entry WHERE settledAt IS NULL")
+  fun outstanding(): Flow<Long>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun upsert(entry: KarobarEntryEntity)
+
+  @Query("UPDATE karobar_entry SET settledAt = :now WHERE id = :id")
+  suspend fun settle(id: String, now: Long)
+
+  @Query("UPDATE karobar_entry SET settledAt = NULL WHERE id = :id")
+  suspend fun reopen(id: String)
+
+  @Query("DELETE FROM karobar_entry WHERE id = :id")
+  suspend fun delete(id: String)
+}
+
+@Dao
 interface TemplateDao {
 
   @Transaction

@@ -131,6 +131,10 @@ data class NewBillState(
   val dueMiti: String = "",
   val lines: List<DraftLine> = listOf(DraftLine(id = 1)),
   val vatRateBp: Int = 1300,
+  /** The shop, for the copy shown before the bill is made. */
+  val storeName: String = "",
+  val storePan: String = "",
+  val miti: String = "",
   val totals: InvoiceTotals = computeInvoice(emptyList()),
   val saving: Boolean = false,
   val error: String? = null,
@@ -236,7 +240,14 @@ class BillingViewModel @Inject constructor(
   init {
     viewModelScope.launch {
       val current = session.current()
-      _newBill.update { it.copy(vatRateBp = current.vatRateBp).recalculate() }
+      _newBill.update {
+        it.copy(
+          vatRateBp = current.vatRateBp,
+          storeName = current.store?.name.orEmpty(),
+          storePan = current.store?.pan.orEmpty(),
+          miti = miti,
+        ).recalculate()
+      }
     }
   }
 
