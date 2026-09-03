@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -187,10 +188,14 @@ private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (
           .clickable { onSelect(tab.route) },
         contentAlignment = Alignment.Center,
       ) {
+        // A circle, not a wide pill. At 52 by 36 the stadium was only half again as wide
+        // as it was tall, which the eye reads as a rounded square rather than a pill —
+        // and a squircle inside a stadium bar is the mismatch that looked wrong. A
+        // circle is unambiguous at this size, and 18 + 6 is still exactly the bar's 24.
         Box(
           Modifier
-            .size(width = NavPill, height = NavItem)
-            .clip(RoundedCornerShape(Radius.pill))
+            .size(NavItem)
+            .clip(CircleShape)
             .background(if (active) tokens.ink else Color.Transparent),
           contentAlignment = Alignment.Center,
         ) {
@@ -222,7 +227,11 @@ data class ShellTab(
 
 /** Tall enough that the card under it has something behind it, short enough to be a hint. */
 private val GradientHeight = 210.dp
-/** The indicator behind the chosen icon. Its radius plus the bar's padding is Radius.bar. */
-private val NavPill = 52.dp
+/**
+ * The circle behind the chosen icon, and the height of every slot.
+ *
+ * Half of it plus the bar's 6dp padding is Radius.bar, which is what keeps the gap
+ * between the two curves even all the way round the corner.
+ */
 private val NavItem = 36.dp
 private val NavIcon = 22.dp
