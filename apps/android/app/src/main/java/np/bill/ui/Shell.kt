@@ -167,11 +167,17 @@ private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (
         spotColor = tokens.shadow,
       )
       .clip(shape)
-      .background(MaterialTheme.colorScheme.surface)
-      .then(
-        if (tokens.isDark) Modifier.border(1.dp, tokens.border, shape) else Modifier,
+      // No outline. The bar sat on a near-black page with a hairline round it, and a ring
+      // that thin at that radius reads as a seam rather than an edge. One shade up from
+      // the page separates it, which is how every other surface here does it.
+      .background(
+        if (tokens.isDark) {
+          MaterialTheme.colorScheme.surfaceContainerHigh
+        } else {
+          MaterialTheme.colorScheme.surface
+        },
       )
-      .padding(horizontal = 6.dp, vertical = 6.dp),
+      .padding(6.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     for (tab in tabs) {

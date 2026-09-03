@@ -217,9 +217,9 @@ fun NewBillScreen(
         LineEditor(
           line = line,
           canRemove = state.lines.size > 1,
-          suggestions = viewModel.itemSuggestions(line.description),
           onChange = handlers.onChange,
           onRemove = handlers.onRemove,
+          suggestions = viewModel::itemSuggestions,
           onPick = { pickingFor = line.id },
           onUse = { viewModel.pickItems(line.id, listOf(it)) },
           onCalculate = { calculatingFor = line.id },
@@ -523,7 +523,7 @@ private fun ChoiceCard(
 private fun LineEditor(
   line: DraftLine,
   canRemove: Boolean,
-  suggestions: kotlinx.coroutines.flow.Flow<List<np.bill.data.db.ItemEntity>>,
+  suggestions: (String) -> kotlinx.coroutines.flow.Flow<List<np.bill.data.db.ItemEntity>>,
   onChange: ((DraftLine) -> DraftLine) -> Unit,
   onRemove: () -> Unit,
   onPick: () -> Unit,
@@ -536,7 +536,19 @@ private fun LineEditor(
   // What the shop already sells, matched against what is being typed. Only while the
   // line is still loose: once a product is on it the list has served its purpose, and
   // leaving it open pushes the rate field under the thumb about to reach for it.
-  val matches by suggestions.collectAsStateWithLifecycle(emptyList())
+  /**
+   * Remembered against the text, not rebuilt on every frame.
+   *
+   * `itemSuggestions(...)` returns a new Flow each time it is called, and
+   * `collectAsStateWithLifecycle` restarts collection whenever the flow instance
+   * changes. Called straight from the call site it therefore cancelled and re-ran a Room
+   * query on every recomposition — every keystroke, and again each time the totals
+   * recalculated. That was the lag while typing a bill.
+   */
+  val matches by remember(line.description) {
+    val query = line.description.trim()
+    if (query.length >= 2) suggestions(query) else kotlinx.coroutines.flow.flowOf(emptyList())
+  }.collectAsStateWithLifecycle(emptyList())
   val offered = if (line.itemId == null && line.description.trim().length >= 2) {
     matches.take(4)
   } else {
@@ -782,7 +794,9 @@ private fun ProductPickerSheet(
   onDismiss: () -> Unit,
 ) {
   var query by remember { mutableStateOf("") }
-  val items by viewModel.itemSuggestions(query)
+  // Remembered against the query. Rebuilt inline it restarted the query every frame the
+  // sheet drew, not just when the text changed.
+  val items by remember(query) { viewModel.itemSuggestions(query) }
     .collectAsStateWithLifecycle(initialValue = emptyList())
   val picked = remember { mutableStateMapOf<String, np.bill.data.db.ItemEntity>() }
 
@@ -850,7 +864,7 @@ private fun CustomerPickerSheet(
   onDismiss: () -> Unit,
 ) {
   var query by remember { mutableStateOf("") }
-  val customers by viewModel.customerSuggestions(query)
+  val customers by remember(query) { viewModel.customerSuggestions(query) }
     .collectAsStateWithLifecycle(initialValue = emptyList())
 
   PickerSheet(

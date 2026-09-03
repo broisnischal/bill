@@ -213,14 +213,24 @@ fun Panel(
     modifier
       .fillMaxWidth()
       .shadow(
-        elevation = if (tokens.isDark) 0.dp else 10.dp,
+        // Six, not ten. Every shadow is its own render layer, and a list of cards was
+        // paying for a lift nobody could see the difference in.
+        elevation = if (tokens.isDark) 0.dp else 6.dp,
         shape = shape,
         ambientColor = tokens.shadow,
         spotColor = tokens.shadow,
       )
       .clip(shape)
-      .background(MaterialTheme.colorScheme.surface)
-      .then(if (tokens.isDark) Modifier.border(1.dp, tokens.border, shape) else Modifier),
+      // Dark mode separates by value rather than by outline: a shadow does not read on a
+      // near-black page, and a hairline round every card turned into a ring that traced
+      // each one. One shade up from the page does the same job with nothing drawn.
+      .background(
+        if (tokens.isDark) {
+          MaterialTheme.colorScheme.surfaceContainer
+        } else {
+          MaterialTheme.colorScheme.surface
+        },
+      ),
   ) {
     // The card carries what is legible on it, so text inside one never inherits a colour
     // from wherever it happens to have been placed.
