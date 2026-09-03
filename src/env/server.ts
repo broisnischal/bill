@@ -31,6 +31,12 @@ export const env = createEnv({
       .string()
       .default("false")
       .transform((value) => value === "true"),
+    /**
+     * Whose code the debug route will hand back, comma separated, E.164.
+     *
+     * Empty means nobody, which is what a deployment that forgot to set it should get.
+     */
+    OTP_DEBUG_PHONES: z.string().default(""),
 
     /**
      * Who may review businesses, as mobile numbers in E.164, comma separated.

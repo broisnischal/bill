@@ -37,6 +37,8 @@ apps/android/local.properties
 apps/android/.kotlin
 *.apk
 *.keystore
+*.jks
+upload-key.txt
 
 # Generated from src/lib/db/seed.ts by `bun run seed`.
 drizzle/seed.sql

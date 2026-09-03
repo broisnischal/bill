@@ -20,6 +20,25 @@ const TTL_MS = 10 * 60 * 1000;
 /** True when there is no gateway to send through and the deployment asked for the inbox. */
 export const devInboxEnabled = !env.SPARROW_SMS_TOKEN && env.OTP_DEBUG;
 
+/**
+ * Whose code may be read back, and nobody else's.
+ *
+ * Without this the readable-OTP route is an account takeover: no SMS gateway plus
+ * OTP_DEBUG means anyone who can reach the URL signs in as any Nepali mobile number,
+ * reads that shop's bills and downloads its PAN certificate. The route existed so a
+ * deployment with no gateway could still be signed into, and that only ever needed to be
+ * true for the handful of numbers doing the testing.
+ *
+ * Empty list with the inbox on means nobody, which is the safe way round.
+ */
+export function devInboxAllows(phoneNumber: string): boolean {
+  if (!devInboxEnabled) return false;
+  return env.OTP_DEBUG_PHONES.split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .includes(phoneNumber);
+}
+
 export async function recordDevSms(phoneNumber: string, text: string) {
   if (!devInboxEnabled) return;
 
