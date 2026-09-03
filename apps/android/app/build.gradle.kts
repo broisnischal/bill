@@ -97,10 +97,11 @@ android {
        * Fills the code in from the server instead of waiting for an SMS.
        *
        * This is on because there is no SMS gateway yet and the build is being handed to
-       * people to try. It only does anything while the server keeps OTP_DEBUG on, and it
-       * means anyone holding this APK can sign in as any number, because the code is
-       * readable from a public route. Turn both off together before this reaches anyone
-       * whose bills matter.
+       * people to try. It does nothing on its own: the route it calls answers only for
+       * the numbers named in the server's OTP_DEBUG_PHONES, so a stranger holding this
+       * APK gets a 404 for their own number and cannot sign in as anybody. Adding a
+       * number to that list is what hands out an account, and the flag here is only what
+       * saves the person on it from reading the code off a server log.
        */
       buildConfigField("Boolean", "OTP_AUTOFILL", "true")
       signingConfig = signingConfigs.getByName(if (uploadKeystore.isPresent) "upload" else "measure")
@@ -122,10 +123,11 @@ android {
        * Fills the code in from the server instead of waiting for an SMS.
        *
        * This is on because there is no SMS gateway yet and the build is being handed to
-       * people to try. It only does anything while the server keeps OTP_DEBUG on, and it
-       * means anyone holding this APK can sign in as any number, because the code is
-       * readable from a public route. Turn both off together before this reaches anyone
-       * whose bills matter.
+       * people to try. It does nothing on its own: the route it calls answers only for
+       * the numbers named in the server's OTP_DEBUG_PHONES, so a stranger holding this
+       * APK gets a 404 for their own number and cannot sign in as anybody. Adding a
+       * number to that list is what hands out an account, and the flag here is only what
+       * saves the person on it from reading the code off a server log.
        */
       buildConfigField("Boolean", "OTP_AUTOFILL", "true")
       signingConfig = signingConfigs.getByName("measure")
