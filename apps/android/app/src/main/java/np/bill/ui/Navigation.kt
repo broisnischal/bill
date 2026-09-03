@@ -26,21 +26,30 @@ import np.bill.ui.billing.BillDetailScreen
 import np.bill.ui.billing.NewBillScreen
 import np.bill.ui.mode.ModePickerScreen
 import np.bill.ui.onboarding.RegisterBusinessScreen
+import np.bill.ui.review.ReviewScreen
+import np.bill.ui.update.UpdateGate
 
 object Routes {
   const val SIGN_IN = "sign-in"
   const val OTP = "otp/{phone}"
   const val MODE = "mode"
   const val REGISTER = "register"
+
+  /** Where a business waits while a person reads its papers. */
+  const val REVIEW = "review"
   const val HOME = "home"
-  const val NEW_BILL = "bill/new?items={itemIds}&customer={customerId}"
+  const val NEW_BILL = "bill/new?items={itemIds}&customer={customerId}&template={templateId}"
   const val BILL = "bill/{billId}"
   const val WALLET = "wallet"
 
   fun otp(phone: String) = "otp/$phone"
 
-  fun newBill(itemIds: List<String> = emptyList(), customerId: String? = null) =
-    "bill/new?items=${itemIds.joinToString(",")}&customer=${customerId.orEmpty()}"
+  fun newBill(
+    itemIds: List<String> = emptyList(),
+    customerId: String? = null,
+    templateId: String? = null,
+  ) = "bill/new?items=${itemIds.joinToString(",")}&customer=${customerId.orEmpty()}" +
+    "&template=${templateId.orEmpty()}"
   fun bill(id: String) = "bill/$id"
 }
 
@@ -73,117 +82,138 @@ fun BillApp(deepLinkToken: String? = null) {
     !state.modeChosen -> Routes.MODE
     state.mode == AppMode.CUSTOMER -> Routes.WALLET
     !state.hasStore -> Routes.REGISTER
+    // Registered but not yet approved: the papers screen, not the biller. A bill it
+    // wrote here would be refused at the first sync, which is a worse way to find out.
+    !state.approved -> Routes.REVIEW
     else -> Routes.HOME
   }
 
-  NavHost(
-    navController = navController,
-    startDestination = start,
-    // Symmetrical on purpose. Sliding in while the outgoing screen only faded left a
-    // frame where neither filled the space, which is what the flicker was.
-    enterTransition = {
-      fadeIn(tween(FADE_MS)) + slideIntoContainer(
-        AnimatedContentTransitionScope.SlideDirection.Start,
-        tween(SLIDE_MS),
-        initialOffset = { it / 12 },
-      )
-    },
-    exitTransition = {
-      fadeOut(tween(FADE_MS)) + slideOutOfContainer(
-        AnimatedContentTransitionScope.SlideDirection.Start,
-        tween(SLIDE_MS),
-        targetOffset = { it / 12 },
-      )
-    },
-    popEnterTransition = {
-      fadeIn(tween(FADE_MS)) + slideIntoContainer(
-        AnimatedContentTransitionScope.SlideDirection.End,
-        tween(SLIDE_MS),
-        initialOffset = { it / 12 },
-      )
-    },
-    popExitTransition = {
-      fadeOut(tween(FADE_MS)) + slideOutOfContainer(
-        AnimatedContentTransitionScope.SlideDirection.End,
-        tween(SLIDE_MS),
-        targetOffset = { it / 12 },
-      )
-    },
-  ) {
-    composable(Routes.SIGN_IN) {
-      SignInScreen(
-        onCodeSent = { phone -> navController.navigate(Routes.otp(phone)) },
-        viewModel = authViewModel,
-      )
-    }
+  // Held behind the update gate: a build the server has stopped accepting must not
+  // reach the till, and one that is merely behind should be offered the update where the
+  // shopkeeper already is rather than on a screen of its own.
+  UpdateGate {
+    NavHost(
+      navController = navController,
+      startDestination = start,
+      // Symmetrical on purpose. Sliding in while the outgoing screen only faded left a
+      // frame where neither filled the space, which is what the flicker was.
+      enterTransition = {
+        fadeIn(tween(FADE_MS)) + slideIntoContainer(
+          AnimatedContentTransitionScope.SlideDirection.Start,
+          tween(SLIDE_MS),
+          initialOffset = { it / 12 },
+        )
+      },
+      exitTransition = {
+        fadeOut(tween(FADE_MS)) + slideOutOfContainer(
+          AnimatedContentTransitionScope.SlideDirection.Start,
+          tween(SLIDE_MS),
+          targetOffset = { it / 12 },
+        )
+      },
+      popEnterTransition = {
+        fadeIn(tween(FADE_MS)) + slideIntoContainer(
+          AnimatedContentTransitionScope.SlideDirection.End,
+          tween(SLIDE_MS),
+          initialOffset = { it / 12 },
+        )
+      },
+      popExitTransition = {
+        fadeOut(tween(FADE_MS)) + slideOutOfContainer(
+          AnimatedContentTransitionScope.SlideDirection.End,
+          tween(SLIDE_MS),
+          targetOffset = { it / 12 },
+        )
+      },
+    ) {
+      composable(Routes.SIGN_IN) {
+        SignInScreen(
+          onCodeSent = { phone -> navController.navigate(Routes.otp(phone)) },
+          viewModel = authViewModel,
+        )
+      }
 
-    composable(Routes.OTP) { entry ->
-      OtpScreen(
-        phoneNumber = entry.arguments?.getString("phone").orEmpty(),
-        onVerified = { navController.replaceWith(Routes.MODE) },
-        onBack = navController::popBackStack,
-        viewModel = authViewModel,
-      )
-    }
+      composable(Routes.OTP) { entry ->
+        OtpScreen(
+          phoneNumber = entry.arguments?.getString("phone").orEmpty(),
+          onVerified = { navController.replaceWith(Routes.MODE) },
+          onBack = navController::popBackStack,
+          viewModel = authViewModel,
+        )
+      }
 
-    composable(Routes.MODE) {
-      ModePickerScreen(
-        onBusiness = { hasStore ->
-          navController.replaceWith(if (hasStore) Routes.HOME else Routes.REGISTER)
-        },
-        onCustomer = { navController.replaceWith(Routes.WALLET) },
-      )
-    }
+      composable(Routes.MODE) {
+        ModePickerScreen(
+          onBusiness = { hasStore ->
+            navController.replaceWith(if (hasStore) Routes.HOME else Routes.REGISTER)
+          },
+          onCustomer = { navController.replaceWith(Routes.WALLET) },
+        )
+      }
 
-    composable(Routes.REGISTER) {
-      RegisterBusinessScreen(onRegistered = { navController.replaceWith(Routes.HOME) })
-    }
+      composable(Routes.REGISTER) {
+        // Registering does not open the biller. It puts the business in the queue.
+        RegisterBusinessScreen(onRegistered = { navController.replaceWith(Routes.REVIEW) })
+      }
 
-    composable(Routes.HOME) {
-      BusinessHome(
-        onNewBill = { itemIds, customerId ->
-          navController.navigate(Routes.newBill(itemIds, customerId))
-        },
-        onOpenBill = { navController.navigate(Routes.bill(it)) },
-        onSwitchMode = { navController.replaceWith(Routes.MODE) },
-        onSignedOut = { navController.replaceWith(Routes.SIGN_IN) },
-      )
-    }
+      composable(Routes.REVIEW) {
+        ReviewScreen(
+          onApproved = { navController.replaceWith(Routes.HOME) },
+          onSignedOut = { navController.replaceWith(Routes.SIGN_IN) },
+        )
+      }
 
-    composable(
-      Routes.NEW_BILL,
-      arguments = listOf(
-        navArgument("itemIds") { defaultValue = "" },
-        navArgument("customerId") { defaultValue = "" },
-      ),
-    ) { entry ->
-      NewBillScreen(
-        startItemIds = entry.arguments?.getString("itemIds")
-          ?.split(",")
-          ?.filter(String::isNotBlank)
-          .orEmpty(),
-        startCustomerId = entry.arguments?.getString("customerId")?.ifBlank { null },
-        onDone = { billId ->
-          navController.popBackStack()
-          navController.navigate(Routes.bill(billId))
-        },
-        onBack = navController::popBackStack,
-      )
-    }
+      composable(Routes.HOME) {
+        BusinessHome(
+          onNewBill = { itemIds, customerId ->
+            navController.navigate(Routes.newBill(itemIds, customerId))
+          },
+          onQuickBill = { templateId ->
+            navController.navigate(Routes.newBill(templateId = templateId))
+          },
+          onOpenBill = { navController.navigate(Routes.bill(it)) },
+          onSwitchMode = { navController.replaceWith(Routes.MODE) },
+          onSignedOut = { navController.replaceWith(Routes.SIGN_IN) },
+        )
+      }
 
-    composable(Routes.BILL) { entry ->
-      BillDetailScreen(
-        billId = entry.arguments?.getString("billId").orEmpty(),
-        onBack = navController::popBackStack,
-      )
-    }
+      composable(
+        Routes.NEW_BILL,
+        arguments = listOf(
+          navArgument("itemIds") { defaultValue = "" },
+          navArgument("customerId") { defaultValue = "" },
+          navArgument("templateId") { defaultValue = "" },
+        ),
+      ) { entry ->
+        NewBillScreen(
+          startItemIds = entry.arguments?.getString("itemIds")
+            ?.split(",")
+            ?.filter(String::isNotBlank)
+            .orEmpty(),
+          startCustomerId = entry.arguments?.getString("customerId")?.ifBlank { null },
+          startTemplateId = entry.arguments?.getString("templateId")?.ifBlank { null },
+          onDone = { billId ->
+            navController.popBackStack()
+            navController.navigate(Routes.bill(billId))
+          },
+          onBack = navController::popBackStack,
+        )
+      }
 
-    composable(Routes.WALLET) {
-      CustomerHome(
-        deepLinkToken = deepLinkToken,
-        onSwitchMode = { navController.replaceWith(Routes.MODE) },
-        onSignedOut = { navController.replaceWith(Routes.SIGN_IN) },
-      )
+      composable(Routes.BILL) { entry ->
+        BillDetailScreen(
+          billId = entry.arguments?.getString("billId").orEmpty(),
+          onBack = navController::popBackStack,
+        )
+      }
+
+      composable(Routes.WALLET) {
+        CustomerHome(
+          deepLinkToken = deepLinkToken,
+          onSwitchMode = { navController.replaceWith(Routes.MODE) },
+          onSignedOut = { navController.replaceWith(Routes.SIGN_IN) },
+        )
+      }
     }
   }
 }

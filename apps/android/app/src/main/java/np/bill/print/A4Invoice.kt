@@ -111,7 +111,7 @@ class A4Invoice(private val pageWidth: Float = 595f) {
     y += 12f
 
     // The document title sits opposite the shop name, as it does on the web sheet.
-    val title = documentTitle(bill.invoiceType)
+    val title = documentTitle(bill.invoiceType, store.taxpayerType == "vat")
     canvas?.drawText(title.first, right, headTop, titleRight)
     canvas?.drawText(title.second, right, headTop + 13f, titleRightNp)
     val copy = if (copyNumber <= 1) "ORIGINAL" else "COPY OF ORIGINAL (#$copyNumber)"
@@ -274,11 +274,21 @@ class A4Invoice(private val pageWidth: Float = 595f) {
     store.province,
   ).joinToString(", ")
 
-  private fun documentTitle(type: String): Pair<String, String> = when (type) {
-    "credit_note" -> "CREDIT NOTE" to "क्रेडिट नोट"
-    "abbreviated_tax_invoice" -> "ABBREVIATED TAX INVOICE" to "संक्षिप्त कर बीजक"
-    else -> "TAX INVOICE" to "कर बीजक"
-  }
+  /**
+   * A shop that is not registered for VAT does not issue a *tax* invoice.
+   *
+   * "कर बीजक" is the VAT document Rule 17 describes, and printing it over a PAN-only
+   * shop's bill claims a registration they do not have.
+   */
+  private fun documentTitle(type: String, vatRegistered: Boolean): Pair<String, String> =
+    when {
+      type == "credit_note" -> "CREDIT NOTE" to "क्रेडिट नोट"
+      type == "abbreviated_tax_invoice" && vatRegistered ->
+        "ABBREVIATED TAX INVOICE" to "संक्षिप्त कर बीजक"
+      type == "abbreviated_tax_invoice" -> "ABBREVIATED INVOICE" to "संक्षिप्त बीजक"
+      vatRegistered -> "TAX INVOICE" to "कर बीजक"
+      else -> "INVOICE" to "बीजक"
+    }
 
   private fun paymentLabel(method: String) = when (method) {
     "bank" -> "Bank Transfer"

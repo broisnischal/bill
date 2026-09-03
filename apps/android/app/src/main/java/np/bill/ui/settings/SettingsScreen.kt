@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import np.bill.ui.theme.BillIcons
 import np.bill.R
 import np.bill.ui.common.Hairline
 import np.bill.ui.common.Notice
@@ -152,7 +151,7 @@ fun SettingsScreen(
             // short and the question is "which one", not "pick one of these".
             if (chosen) {
               Icon(
-                Icons.Filled.Check,
+                BillIcons.Check,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
@@ -162,6 +161,34 @@ fun SettingsScreen(
         }
       }
       Spacer(Modifier.height(12.dp))
+    }
+
+    Spacer(Modifier.height(12.dp))
+
+    Panel {
+      Section(stringResource(R.string.about))
+      Text(
+        stringResource(R.string.app_version, state.versionName, state.versionCode),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 16.dp),
+      )
+      state.updateMessage?.let {
+        Spacer(Modifier.height(4.dp))
+        Text(
+          it,
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(horizontal = 16.dp),
+        )
+      }
+      Spacer(Modifier.height(12.dp))
+      SecondaryButton(
+        text = stringResource(R.string.update_check),
+        onClick = viewModel::checkForUpdates,
+        enabled = !state.checkingUpdate,
+        modifier = Modifier.padding(horizontal = 16.dp),
+      )
+      Spacer(Modifier.height(16.dp))
     }
 
     Spacer(Modifier.height(12.dp))

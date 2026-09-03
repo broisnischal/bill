@@ -40,6 +40,10 @@
     // No SMS account yet, so the code that would have been texted is readable over
     // /api/v1/dev/otp. Drop this the moment SPARROW_SMS_TOKEN is set as a secret.
     "OTP_DEBUG": "true",
+
+    // Who may review a business at /admin, as mobile numbers in E.164, comma separated.
+    // Empty means nobody, and a deployment with nobody cannot approve anyone.
+    "ADMIN_PHONES": "+9779800000000,+9779856454546",
     "SPARROW_SMS_FROM": "Demo",
   },
 

@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -15,11 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Print
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -31,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,13 +43,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import np.bill.ui.theme.BillIcons
 import np.bill.R
 import np.bill.ui.common.Hairline
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
 import np.bill.core.money.formatQuantity
 import np.bill.core.nepali.BsDate
 import np.bill.data.db.SyncState
+import np.bill.ui.common.ActionSheet
+import np.bill.ui.common.ChoiceChip
+import np.bill.ui.common.DangerButton
 import np.bill.ui.common.EmptyState
+import np.bill.ui.common.Field
 import np.bill.ui.common.Notice
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.NoticeTone
@@ -75,6 +78,7 @@ fun BillDetailScreen(
   val state by viewModel.state.collectAsStateWithLifecycle()
   val context = LocalContext.current
   var cancelling by remember { mutableStateOf(false) }
+  var naming by remember { mutableStateOf(false) }
   var choosingPaper by remember { mutableStateOf(false) }
   var reason by remember { mutableStateOf("") }
 
@@ -83,17 +87,22 @@ fun BillDetailScreen(
   val bill = state.bill
 
   Scaffold(
+    containerColor = MaterialTheme.colorScheme.background,
     topBar = {
       TopAppBar(
         title = { Text(bill?.invoiceNumber ?: "") },
         navigationIcon = {
-          IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = null) }
+          IconButton(onClick = onBack) { Icon(BillIcons.ArrowLeft, contentDescription = null) }
         },
         actions = {
           IconButton(onClick = { choosingPaper = true }) {
-            Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.share_pdf))
+            Icon(BillIcons.Share, contentDescription = stringResource(R.string.share_pdf))
           }
         },
+        colors = TopAppBarDefaults.topAppBarColors(
+          containerColor = androidx.compose.ui.graphics.Color.Transparent,
+          scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
       )
     },
   ) { padding ->
@@ -158,6 +167,15 @@ fun BillDetailScreen(
           )
         }
 
+        // Directly under Print, because this is the moment a shop knows the basket
+        // repeats — not at the bottom of the totals, where it was and where nobody
+        // scrolled to find it.
+        Spacer(Modifier.height(10.dp))
+        SecondaryButton(
+          text = stringResource(R.string.template_save),
+          onClick = { naming = true },
+        )
+
         state.message?.let {
           Spacer(Modifier.height(12.dp))
           Notice(it, tone = if (state.messageIsError) NoticeTone.ERROR else NoticeTone.INFO)
@@ -180,12 +198,12 @@ fun BillDetailScreen(
             Column(Modifier.weight(1f)) {
               Text(line.description, style = MaterialTheme.typography.bodyLarge)
               Text(
-                "${formatQuantity(line.quantityMilli)} ${line.unit} × ${formatPaisa(line.unitPricePaisa)}",
+                "${formatQuantity(line.quantityMilli)} ${line.unit} × ${formatMoney(line.unitPricePaisa)}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             }
-            Text(formatPaisa(line.lineTotalPaisa), style = MaterialTheme.typography.bodyLarge)
+            Text(formatMoney(line.lineTotalPaisa), style = MaterialTheme.typography.bodyLarge)
           }
         }
 
@@ -193,23 +211,23 @@ fun BillDetailScreen(
         Hairline()
         Spacer(Modifier.height(12.dp))
 
-        TotalsRow(stringResource(R.string.sub_total), formatPaisa(bill.subTotalPaisa))
+        TotalsRow(stringResource(R.string.sub_total), formatMoney(bill.subTotalPaisa))
         if (bill.discountPaisa > 0) {
-          TotalsRow(stringResource(R.string.discount), "-${formatPaisa(bill.discountPaisa)}")
+          TotalsRow(stringResource(R.string.discount), "-${formatMoney(bill.discountPaisa)}")
         }
         if (bill.nonTaxableAmountPaisa > 0) {
-          TotalsRow(stringResource(R.string.exempt), formatPaisa(bill.nonTaxableAmountPaisa))
+          TotalsRow(stringResource(R.string.exempt), formatMoney(bill.nonTaxableAmountPaisa))
         }
         if (bill.vatRateBp > 0) {
-          TotalsRow(stringResource(R.string.taxable), formatPaisa(bill.taxableAmountPaisa))
+          TotalsRow(stringResource(R.string.taxable), formatMoney(bill.taxableAmountPaisa))
           TotalsRow(
             stringResource(R.string.vat_at, bill.vatRateBp / 100),
-            formatPaisa(bill.vatAmountPaisa),
+            formatMoney(bill.vatAmountPaisa),
           )
         }
         TotalsRow(
           stringResource(R.string.total),
-          "Rs ${formatPaisa(bill.totalPaisa)}",
+          "Rs ${formatMoney(bill.totalPaisa)}",
           emphasised = true,
         )
         Text(
@@ -225,6 +243,8 @@ fun BillDetailScreen(
             onClick = { cancelling = true },
           )
         }
+
+
         Spacer(Modifier.height(40.dp))
       }
     }
@@ -233,55 +253,179 @@ fun BillDetailScreen(
   if (choosingPaper) {
     // Both papers, because a Nepali shop uses both: the roll goes to the customer on
     // Viber, the sheet goes to the accountant.
-    AlertDialog(
-      onDismissRequest = { choosingPaper = false },
-      title = { Text(stringResource(R.string.choose_paper)) },
-      text = {
-        Column {
-          TextButton(
-            onClick = {
-              viewModel.share(context, BillDetailViewModel.PrintFormat.RECEIPT_80MM)
-              choosingPaper = false
-            },
-          ) { Text(stringResource(R.string.share_80mm)) }
-          TextButton(
-            onClick = {
-              viewModel.share(context, BillDetailViewModel.PrintFormat.A4)
-              choosingPaper = false
-            },
-          ) { Text(stringResource(R.string.share_a4)) }
-        }
+    ActionSheet(
+      title = stringResource(R.string.choose_paper),
+      primary = stringResource(R.string.share_80mm) to {
+        viewModel.share(context, BillDetailViewModel.PrintFormat.RECEIPT_80MM)
+        choosingPaper = false
       },
-      confirmButton = {
-        TextButton(onClick = { choosingPaper = false }) { Text(stringResource(R.string.cancel)) }
+      secondary = stringResource(R.string.share_a4) to {
+        viewModel.share(context, BillDetailViewModel.PrintFormat.A4)
+        choosingPaper = false
       },
+      onDismiss = { choosingPaper = false },
+    )
+  }
+
+  if (naming) {
+    TemplateNameSheet(
+      suggestion = bill?.buyerName.orEmpty(),
+      onSave = { name ->
+        viewModel.saveAsTemplate(name)
+        naming = false
+      },
+      onDismiss = { naming = false },
     )
   }
 
   if (cancelling) {
-    AlertDialog(
-      onDismissRequest = { cancelling = false },
-      title = { Text(stringResource(R.string.cancel_bill)) },
-      text = {
-        OutlinedTextField(
+    CancelBillSheet(
+      invoiceNumber = bill?.invoiceNumber.orEmpty(),
+      reason = reason,
+      onReason = { reason = it },
+      onConfirm = {
+        viewModel.cancel(reason.trim())
+        cancelling = false
+      },
+      onDismiss = { cancelling = false },
+    )
+  }
+}
+
+/**
+ * Cancelling a bill, which is not the same as deleting one and must not read like it.
+ *
+ * The sheet says what cancelling actually does — the bill stays in the register and in
+ * the return, marked cancelled — because the shopkeeper reaching for it usually wants a
+ * credit note instead, and finding that out afterwards is expensive.
+ *
+ * The reason is required and offered as the four that account for nearly every
+ * cancellation, since it is written into the audit trail and read by an auditor who was
+ * not there. Typing one by hand at a counter produces "mistake", which tells them
+ * nothing.
+ */
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+private fun CancelBillSheet(
+  invoiceNumber: String,
+  reason: String,
+  onReason: (String) -> Unit,
+  onConfirm: () -> Unit,
+  onDismiss: () -> Unit,
+) {
+  val offered = listOf(
+    stringResource(R.string.cancel_reason_pan),
+    stringResource(R.string.cancel_reason_amount),
+    stringResource(R.string.cancel_reason_duplicate),
+    stringResource(R.string.cancel_reason_no_sale),
+  )
+  var writingOwn by remember { mutableStateOf(reason.isNotBlank() && reason !in offered) }
+
+  androidx.compose.material3.ModalBottomSheet(
+    onDismissRequest = onDismiss,
+    sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    shape = androidx.compose.foundation.shape.RoundedCornerShape(
+      topStart = np.bill.ui.theme.Radius.sheet,
+      topEnd = np.bill.ui.theme.Radius.sheet,
+    ),
+  ) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+      Text(
+        stringResource(R.string.cancel_bill_title, invoiceNumber),
+        style = MaterialTheme.typography.headlineSmall,
+      )
+      Spacer(Modifier.height(6.dp))
+      Text(
+        stringResource(R.string.cancel_bill_body),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+
+      Spacer(Modifier.height(18.dp))
+      Text(
+        stringResource(R.string.cancel_reason_required),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Spacer(Modifier.height(8.dp))
+
+      FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (option in offered) {
+          ChoiceChip(
+            text = option,
+            selected = !writingOwn && reason == option,
+            onClick = {
+              writingOwn = false
+              onReason(option)
+            },
+          )
+        }
+        ChoiceChip(
+          text = stringResource(R.string.cancel_reason_other),
+          selected = writingOwn,
+          onClick = {
+            writingOwn = true
+            onReason("")
+          },
+        )
+      }
+
+      if (writingOwn) {
+        Spacer(Modifier.height(12.dp))
+        Field(
           value = reason,
-          onValueChange = { reason = it },
-          label = { Text(stringResource(R.string.cancel_reason)) },
+          onValueChange = onReason,
+          label = stringResource(R.string.cancel_reason),
+          hint = stringResource(R.string.cancel_reason_hint),
           singleLine = false,
         )
-      },
-      confirmButton = {
-        TextButton(
+      }
+
+      Spacer(Modifier.height(20.dp))
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        SecondaryButton(
+          text = stringResource(R.string.cancel_keep),
+          onClick = onDismiss,
+          modifier = Modifier.weight(1f),
+        )
+        DangerButton(
+          text = stringResource(R.string.cancel_bill_confirm),
+          onClick = onConfirm,
           enabled = reason.trim().length >= 5,
-          onClick = {
-            viewModel.cancel(reason.trim())
-            cancelling = false
-          },
-        ) { Text(stringResource(R.string.cancel_bill)) }
-      },
-      dismissButton = {
-        TextButton(onClick = { cancelling = false }) { Text(stringResource(R.string.done)) }
-      },
+          modifier = Modifier.weight(1f),
+        )
+      }
+    }
+  }
+}
+
+/** Names a basket so it can be billed again from the home screen in one tap. */
+@Composable
+private fun TemplateNameSheet(
+  suggestion: String,
+  onSave: (String) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  var name by remember { mutableStateOf("") }
+
+  np.bill.ui.common.FormSheet(
+    title = stringResource(R.string.template_save),
+    onDismiss = onDismiss,
+    heightFraction = 0.5f,
+    action = {
+      PrimaryButton(
+        text = stringResource(R.string.save),
+        onClick = { onSave(name.trim()) },
+        enabled = name.trim().length >= 2,
+      )
+    },
+  ) {
+    Field(
+      value = name,
+      onValueChange = { name = it },
+      label = stringResource(R.string.template_name),
+      hint = stringResource(R.string.template_name_hint),
+      placeholder = suggestion.ifBlank { null },
     )
   }
 }

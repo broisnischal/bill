@@ -141,6 +141,12 @@ class BillingRepository @Inject constructor(
 
     bills.insertBill(bill, lines)
 
+    // The shelf count follows the sale straight away, so the next customer sees what is
+    // actually left rather than what was left this morning.
+    for (line in lines) {
+      line.itemId?.let { catalog.reduceStock(it, line.quantityMilli) }
+    }
+
     // A line typed by hand becomes a product, so the second time it is sold it is one tap.
     // Only lines with no item behind them: picking an existing product must never write a
     // duplicate, and a one-off line the shop priced for a single customer is still worth

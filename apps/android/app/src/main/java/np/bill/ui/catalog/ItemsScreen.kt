@@ -5,7 +5,12 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,10 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Checkbox
@@ -47,19 +48,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import np.bill.ui.theme.BillIcons
 import np.bill.R
+import np.bill.ui.common.IconTile
+import np.bill.ui.common.TileTone
 import np.bill.ui.common.Hairline
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
+import np.bill.core.money.formatQuantity
 import np.bill.data.db.ItemEntity
+import np.bill.data.db.tagList
 import np.bill.scan.CodeScanner
 import np.bill.scan.ScanTarget
 import np.bill.ui.common.ActionSheet
+import np.bill.ui.common.ChoiceChip
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.BottomAction
 import np.bill.ui.common.Field
@@ -70,6 +78,8 @@ import np.bill.ui.common.SecondaryButton
 import np.bill.ui.common.SearchBar
 import np.bill.ui.common.SelectionBar
 import np.bill.ui.common.RomanizedField
+import np.bill.ui.theme.Radius
+import np.bill.ui.theme.LocalTokens
 
 /**
  * What the shop sells.
@@ -116,10 +126,19 @@ fun ItemsScreen(
         placeholder = stringResource(R.string.search_items),
       )
 
+      // The list gets its own white ground with a rounded head, so rows sit on a surface
+      // rather than loose on the page.
+      Box(
+        Modifier
+          .weight(1f)
+          .padding(top = 4.dp)
+          .clip(RoundedCornerShape(topStart = Radius.card, topEnd = Radius.card))
+          .background(MaterialTheme.colorScheme.surface),
+      ) {
       if (items.isEmpty()) {
-        Box(Modifier.weight(1f)) { EmptyState(stringResource(R.string.no_items_yet)) }
+        EmptyState(stringResource(R.string.no_items_yet))
       } else {
-        LazyColumn(Modifier.weight(1f)) {
+        LazyColumn(Modifier.fillMaxSize()) {
           items(items, key = { it.id }, contentType = { "item" }) { item ->
             ItemRow(
               item = item,
@@ -134,9 +153,10 @@ fun ItemsScreen(
               },
               onLongClick = { selected[item.id] = kotlin.Unit },
             )
-            Hairline(Modifier.padding(start = 16.dp))
+            Hairline(Modifier.padding(start = 68.dp))
           }
         }
+      }
       }
 
       BottomAction(
@@ -177,7 +197,7 @@ fun ItemsScreen(
   chosen?.let { item ->
     ActionSheet(
       title = item.name,
-      subtitle = "Rs ${formatPaisa(item.unitPricePaisa)} per ${item.unit}",
+      subtitle = "Rs ${formatMoney(item.unitPricePaisa)} per ${item.unit}",
       primary = stringResource(R.string.sell_this) to {
         onBillWithItems(listOf(item.id))
         chosen = null
@@ -211,26 +231,58 @@ private fun ItemRow(
     if (selecting) {
       Checkbox(checked = selected, onCheckedChange = { onClick() })
       Spacer(Modifier.width(4.dp))
+    } else {
+      IconTile(
+        icon = BillIcons.Package,
+        tone = if (item.stockThousandths != null && item.stockThousandths <= 0) {
+          TileTone.NEGATIVE
+        } else {
+          TileTone.MINT
+        },
+      )
+      Spacer(Modifier.width(12.dp))
     }
     Column(Modifier.weight(1f)) {
       Text(item.name, style = MaterialTheme.typography.bodyLarge)
       Text(
         listOfNotNull(
           "per ${item.unit}",
-          item.barcode?.let { "· $it" },
+          item.tagList.takeIf { it.isNotEmpty() }?.joinToString(" ") { "· $it" },
           if (!item.vatApplicable) "· exempt" else null,
         ).joinToString(" "),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
     }
-    Text("Rs ${formatPaisa(item.unitPricePaisa)}", style = MaterialTheme.typography.titleMedium)
+    Column(horizontalAlignment = Alignment.End) {
+      Text("Rs ${formatMoney(item.unitPricePaisa)}", style = MaterialTheme.typography.titleLarge)
+      // Only for the products the shop counts. Out is said in words and in the warning
+      // colour, because it is the one a shopkeeper needs to catch mid-sale.
+      item.stockThousandths?.let { stock ->
+        Text(
+          if (stock <= 0) {
+            stringResource(R.string.stock_out)
+          } else {
+            stringResource(R.string.stock_left, formatQuantity(stock), item.unit)
+          },
+          style = MaterialTheme.typography.labelMedium,
+          color = if (stock <= 0) LocalTokens.current.warning else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    }
   }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * The product form.
+ *
+ * Public because the home screen opens it too. Adding a product from home used to switch
+ * to the Products tab first, which put a list nobody asked for behind the sheet and left
+ * them on the wrong tab afterwards.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun ItemSheet(
+fun ItemSheet(
   viewModel: CatalogViewModel,
   startScanning: Boolean = false,
   onDismiss: () -> Unit,
@@ -266,6 +318,15 @@ private fun ItemSheet(
     return
   }
 
+  val shopTags by viewModel.tags.collectAsStateWithLifecycle()
+  var addingTag by remember { mutableStateOf(false) }
+  var newTag by remember { mutableStateOf("") }
+  // Everything past the name, the rate and the count is folded away. A shopkeeper adding
+  // a product mid-sale fills three fields; the barcode and the HS code are for the
+  // evening, and putting all six on screen at once made the quick job look like the slow
+  // one.
+  var showMore by remember { mutableStateOf(false) }
+
   FormSheet(
     title = stringResource(if (form.id == null) R.string.add_product else R.string.edit_product),
     onDismiss = onDismiss,
@@ -299,11 +360,18 @@ private fun ItemSheet(
       onToggleRomanize = { on -> viewModel.onItemField { it.copy(romanize = on) } },
     )
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(verticalAlignment = Alignment.Top) {
       Field(
         value = form.price,
         onValueChange = { value -> viewModel.onItemField { it.copy(price = value) } },
         label = stringResource(R.string.rate),
+        prefix = {
+          Text(
+            "Rs ",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.weight(1f),
       )
@@ -313,42 +381,126 @@ private fun ItemSheet(
         options = np.bill.core.unit.Unit.codes,
         onPick = { unit -> viewModel.onItemField { it.copy(unit = unit) } },
         label = stringResource(R.string.unit),
-        modifier = Modifier.width(118.dp),
+        modifier = Modifier.width(112.dp),
       )
     }
 
-    Spacer(Modifier.height(12.dp))
     Field(
-      value = form.barcode,
-      onValueChange = { value -> viewModel.onItemField { it.copy(barcode = value) } },
-      label = stringResource(R.string.barcode),
-      hint = stringResource(R.string.scan_to_add),
-      trailingIcon = {
-        IconButton(
+      value = form.stock,
+      onValueChange = { value -> viewModel.onItemField { it.copy(stock = value) } },
+      label = stringResource(R.string.in_stock),
+      hint = stringResource(R.string.in_stock_hint),
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+    )
+
+    Text(
+      stringResource(R.string.labels),
+      style = MaterialTheme.typography.labelMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.padding(top = 14.dp, bottom = 8.dp),
+    )
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      for (tag in (form.tags + shopTags).distinct()) {
+        ChoiceChip(
+          text = tag,
+          selected = tag in form.tags,
           onClick = {
-            if (cameraGranted) scanning = true else cameraLauncher.launch(Manifest.permission.CAMERA)
+            viewModel.onItemField {
+              it.copy(tags = if (tag in it.tags) it.tags - tag else it.tags + tag)
+            }
           },
-        ) {
-          Icon(
-            Icons.Filled.QrCodeScanner,
-            contentDescription = stringResource(R.string.scan_barcode),
-            tint = MaterialTheme.colorScheme.primary,
-          )
-        }
-      },
-    )
+        )
+      }
+      ChoiceChip(
+        text = stringResource(R.string.new_label),
+        selected = false,
+        onClick = { addingTag = !addingTag },
+      )
+    }
 
-    Field(
-      value = form.hsCode,
-      onValueChange = { value -> viewModel.onItemField { it.copy(hsCode = value) } },
-      label = stringResource(R.string.hs_code),
-    )
+    if (addingTag) {
+      Spacer(Modifier.height(10.dp))
+      Field(
+        value = newTag,
+        onValueChange = { newTag = it },
+        label = stringResource(R.string.new_label),
+        trailingIcon = {
+          IconButton(
+            onClick = {
+              val cleaned = newTag.trim().lowercase()
+              if (cleaned.isNotEmpty()) {
+                viewModel.onItemField { it.copy(tags = (it.tags + cleaned).distinct()) }
+              }
+              newTag = ""
+              addingTag = false
+            },
+          ) {
+            Icon(
+              BillIcons.Plus,
+              contentDescription = stringResource(R.string.new_label),
+              tint = MaterialTheme.colorScheme.primary,
+            )
+          }
+        },
+      )
+    }
 
-    FilterChip(
-      selected = !form.vatApplicable,
-      onClick = { viewModel.onItemField { it.copy(vatApplicable = !it.vatApplicable) } },
-      label = { Text(stringResource(R.string.vat_exempt)) },
-    )
+    Spacer(Modifier.height(6.dp))
+    Hairline()
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .clickable { showMore = !showMore }
+        .padding(vertical = 14.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        stringResource(R.string.more_details),
+        style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.weight(1f),
+      )
+      Icon(
+        if (showMore) BillIcons.ChevronUp else BillIcons.ChevronDown,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    }
+
+    if (showMore) {
+      Field(
+        value = form.barcode,
+        onValueChange = { value -> viewModel.onItemField { it.copy(barcode = value) } },
+        label = stringResource(R.string.barcode),
+        hint = stringResource(R.string.scan_to_add),
+        trailingIcon = {
+          IconButton(
+            onClick = {
+              if (cameraGranted) scanning = true else cameraLauncher.launch(Manifest.permission.CAMERA)
+            },
+          ) {
+            Icon(
+              BillIcons.ScanLine,
+              contentDescription = stringResource(R.string.scan_barcode),
+              tint = MaterialTheme.colorScheme.primary,
+            )
+          }
+        },
+      )
+
+      Field(
+        value = form.hsCode,
+        onValueChange = { value -> viewModel.onItemField { it.copy(hsCode = value) } },
+        label = stringResource(R.string.hs_code),
+      )
+
+      if (np.bill.BuildConfig.VAT_ENABLED) {
+        ChoiceChip(
+          text = stringResource(R.string.vat_exempt),
+          selected = !form.vatApplicable,
+          onClick = { viewModel.onItemField { it.copy(vatApplicable = !it.vatApplicable) } },
+        )
+      }
+    }
     Spacer(Modifier.height(8.dp))
   }
 }

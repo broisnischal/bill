@@ -7,6 +7,30 @@ plugins {
   alias(libs.plugins.hilt)
 }
 
+/**
+ * One file describes a release: `release.json` beside this module.
+ *
+ * Gradle stamps the APK from it and the Worker serves the same file to installs that ask
+ * whether they are out of date, so the version a phone reports and the version it is
+ * measured against cannot drift. It is read through `providers` rather than
+ * `File.readText` so that bumping it invalidates the configuration cache instead of
+ * quietly shipping the previous number.
+ */
+@Suppress("UNCHECKED_CAST")
+val release = groovy.json.JsonSlurper().parseText(
+  providers.fileContents(rootProject.layout.projectDirectory.file("release.json")).asText.get(),
+) as Map<String, Any>
+
+/**
+ * Which key signs the release build.
+ *
+ * Android refuses an update signed by a different key than the one already on the phone,
+ * so this is what makes an in-app update possible at all. CI writes the upload keystore
+ * out of a secret and sets these variables; a machine without them falls back to the
+ * debug key, which installs locally and can never update a phone carrying a real build.
+ */
+val uploadKeystore = providers.environmentVariable("ANDROID_KEYSTORE_FILE")
+
 android {
   namespace = "np.bill"
   compileSdk = 35
@@ -16,8 +40,20 @@ android {
     // Android 7.0. Covers the cheap handsets a small shop actually bills on.
     minSdk = 24
     targetSdk = 35
-    versionCode = 1
-    versionName = "1.0.0"
+    versionCode = (release["versionCode"] as Number).toInt()
+    versionName = release["versionName"] as String
+
+    /**
+     * VAT is off across the app for now.
+     *
+     * Every shop this reaches first holds a PAN and is not registered for VAT, and a
+     * bill charging 13% on their behalf overcharges their customer and claims a
+     * registration they do not have. A store row can still say it is VAT-registered —
+     * several do, from before this — and the flag makes that inert until VAT is turned
+     * back on deliberately. The server has the same switch in src/lib/tax/vat.ts, and
+     * the two have to move together.
+     */
+    buildConfigField("Boolean", "VAT_ENABLED", "false")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     // Only the languages the app is translated into ship, which keeps the APK small.
@@ -32,6 +68,15 @@ android {
       storePassword = "android"
       keyAlias = "androiddebugkey"
       keyPassword = "android"
+    }
+
+    create("upload") {
+      if (uploadKeystore.isPresent) {
+        storeFile = file(uploadKeystore.get())
+        storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
+        keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
+        keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
+      }
     }
   }
 
@@ -58,7 +103,7 @@ android {
        * whose bills matter.
        */
       buildConfigField("Boolean", "OTP_AUTOFILL", "true")
-      signingConfig = signingConfigs.getByName("measure")
+      signingConfig = signingConfigs.getByName(if (uploadKeystore.isPresent) "upload" else "measure")
     }
 
     /**

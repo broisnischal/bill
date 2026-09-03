@@ -8,12 +8,14 @@ import {
   PackageIcon,
   PlusIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   UsersIcon,
 } from "lucide-react";
 
 import { SignOutButton } from "#/components/sign-out-button.tsx";
 import { ThemeToggle } from "#/components/theme-toggle.tsx";
 import { Button } from "#/components/ui/button.tsx";
+import { isReviewerQueryOptions } from "#/lib/admin/queries.ts";
 import { useAuth } from "#/lib/auth/hooks.ts";
 import { storeQueryOptions } from "#/lib/store/queries.ts";
 
@@ -44,6 +46,7 @@ const NAV = [
 function AppLayout() {
   const { user } = useAuth();
   const { data: membership } = useQuery(storeQueryOptions());
+  const { data: isReviewer } = useQuery(isReviewerQueryOptions());
 
   return (
     <div className="flex min-h-svh flex-col bg-muted/30 md:flex-row">
@@ -79,6 +82,20 @@ function AppLayout() {
               {entry.label}
             </Link>
           ))}
+
+          {/* Only for the accounts on the reviewer list. Everyone else has no route to
+              land on and would get a 404 for their trouble. */}
+          {isReviewer && (
+            <Link
+              to="/admin"
+              search={{ status: "pending" as const }}
+              activeProps={{ className: "bg-accent text-accent-foreground" }}
+              className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+            >
+              <ShieldCheckIcon className="size-4" aria-hidden="true" />
+              Review
+            </Link>
+          )}
         </nav>
 
         <div className="mt-auto hidden flex-col gap-2 border-t pt-3 text-xs text-muted-foreground md:flex">

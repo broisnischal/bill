@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import np.bill.R
 import np.bill.core.geo.Nepal
 import np.bill.ui.common.Field
+import np.bill.ui.common.SegmentedChoice
 import np.bill.ui.common.Hairline
 import np.bill.ui.common.Notice
 import np.bill.ui.common.NoticeTone
@@ -158,6 +159,33 @@ fun BusinessSettingsScreen(
     Hairline()
     Spacer(Modifier.height(16.dp))
 
+    // Hidden while VAT is switched off app-wide: a control that cannot change what a
+    // bill charges is worse than no control.
+    if (np.bill.BuildConfig.VAT_ENABLED) {
+    Text(stringResource(R.string.taxpayer_type), style = MaterialTheme.typography.titleMedium)
+    Spacer(Modifier.height(8.dp))
+    SegmentedChoice(
+      options = listOf(
+        "pan" to stringResource(R.string.taxpayer_pan),
+        "vat" to stringResource(R.string.taxpayer_vat),
+      ),
+      selected = state.taxpayerType,
+      onSelect = viewModel::onTaxpayerType,
+    )
+    Spacer(Modifier.height(6.dp))
+    Text(
+      stringResource(
+        if (state.taxpayerType == "vat") R.string.taxpayer_vat_note else R.string.taxpayer_pan_note,
+      ),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(20.dp))
+    }
+
+    // CBMS is the IRD's real-time feed for VAT taxpayers. There is nothing to file with
+    // it while the app charges no tax, so the whole block goes with VAT.
+    if (np.bill.BuildConfig.VAT_ENABLED) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       Column(Modifier.weight(1f)) {
         Text(stringResource(R.string.cbms_title), style = MaterialTheme.typography.titleMedium)
@@ -187,6 +215,7 @@ fun BusinessSettingsScreen(
         label = stringResource(R.string.cbms_password),
         hint = stringResource(R.string.cbms_password_kept),
       )
+    }
     }
 
     Spacer(Modifier.height(20.dp))

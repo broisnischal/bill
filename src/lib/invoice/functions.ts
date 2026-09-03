@@ -6,7 +6,11 @@ import * as z from "zod";
 import { db } from "#/lib/db/index.ts";
 import { invoice, invoiceAudit, invoiceItem } from "#/lib/db/schema/index.ts";
 import { fiscalYearRange } from "#/lib/nepali/date.ts";
-import { storeAdminMiddleware, storeMiddleware } from "#/lib/store/middleware.ts";
+import {
+  approvedStoreMiddleware,
+  storeAdminMiddleware,
+  storeMiddleware,
+} from "#/lib/store/middleware.ts";
 
 import {
   cancelInvoiceSchema,
@@ -40,7 +44,7 @@ function currentActor(user: { id: string; name: string }): Actor {
 }
 
 export const $createInvoice = createServerFn({ method: "POST" })
-  .middleware([storeMiddleware])
+  .middleware([approvedStoreMiddleware])
   .validator(createInvoiceSchema)
   .handler(async ({ data, context }) =>
     createInvoice({ store: context.store, actor: currentActor(context.user), input: data }),

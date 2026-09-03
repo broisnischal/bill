@@ -2,4 +2,6 @@
 <paths>
     <!-- Generated PDFs live in the cache and are shared out by content URI, never by path. -->
     <cache-path name="bills" path="bills/" />
+    <!-- A downloaded update, handed to the installer the same way. -->
+    <cache-path name="updates" path="updates/" />
 </paths>

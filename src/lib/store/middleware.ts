@@ -29,6 +29,28 @@ export const storeMiddleware = createMiddleware()
     return next({ context: { store: membership.store, role: membership.role } });
   });
 
+/**
+ * The store, and it has to have been approved.
+ *
+ * Wrapped around everything that writes a bill. A business waiting on review can still
+ * set itself up — products, buyers, settings — because that is the useful thing to do
+ * while waiting. What it cannot do is put a PAN on a document a tax office will read.
+ */
+export const approvedStoreMiddleware = createMiddleware()
+  .middleware([storeMiddleware])
+  .server(async ({ next, context }) => {
+    if (context.store.status !== "approved") {
+      setResponseStatus(403);
+      throw new Error(
+        context.store.status === "rejected"
+          ? (context.store.reviewNote ??
+              "The business was not approved. Check what was asked for and send it again.")
+          : "The business is still being reviewed. Billing opens as soon as it is approved.",
+      );
+    }
+    return next();
+  });
+
 /** Owner or manager only: settings, cancellations, credit notes. */
 export const storeAdminMiddleware = createMiddleware()
   .middleware([storeMiddleware])

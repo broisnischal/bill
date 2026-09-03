@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,8 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import np.bill.ui.theme.BillIcons
 import np.bill.R
 import np.bill.ui.theme.LocalTokens
 import np.bill.ui.theme.Radius
@@ -69,7 +69,7 @@ fun SelectionBar(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       IconButton(onClick = onClear) {
-        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.clear_selection))
+        Icon(BillIcons.X, contentDescription = stringResource(R.string.clear_selection))
       }
       Text(
         stringResource(R.string.selected_count, count),
@@ -117,19 +117,19 @@ fun SearchBar(
       },
       leadingIcon = {
         Icon(
-          Icons.Filled.Search,
+          BillIcons.Search,
           contentDescription = null,
           tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
       },
       singleLine = true,
       textStyle = MaterialTheme.typography.bodyLarge,
-      shape = RoundedCornerShape(Radius.large),
+      shape = RoundedCornerShape(Radius.pill),
       colors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = tokens.border,
-        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        unfocusedBorderColor = tokens.borderStrong,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
       ),
       modifier = Modifier.weight(1f).heightIn(min = TouchTarget),
     )
@@ -143,8 +143,9 @@ fun SearchBar(
 /**
  * One of a few options, as a single connected control.
  *
- * Loose chips scattered across a row read as several independent switches; a segmented
- * control reads as one question with one answer, which is what these actually are.
+ * Loose chips scattered across a row read as several independent switches; a pill inside
+ * a track reads as one question with one answer, which is what these actually are. The
+ * chosen half is the one that looks lifted, and it is the only one carrying a shadow.
  */
 @Composable
 fun <T> SegmentedChoice(
@@ -154,28 +155,34 @@ fun <T> SegmentedChoice(
   modifier: Modifier = Modifier,
 ) {
   val tokens = LocalTokens.current
+  val pill = RoundedCornerShape(Radius.pill)
 
   Row(
     modifier
       .fillMaxWidth()
-      .clip(RoundedCornerShape(Radius.large))
+      .clip(pill)
       .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-      .border(1.dp, tokens.border, RoundedCornerShape(Radius.large))
-      .padding(3.dp),
-    horizontalArrangement = Arrangement.spacedBy(3.dp),
+      .padding(4.dp),
+    horizontalArrangement = Arrangement.spacedBy(4.dp),
   ) {
     for ((value, label) in options) {
       val active = value == selected
       Row(
         Modifier
           .weight(1f)
-          .clip(RoundedCornerShape(Radius.medium))
+          .then(
+            if (active && !tokens.isDark) {
+              Modifier.shadow(4.dp, pill, ambientColor = tokens.shadow, spotColor = tokens.shadow)
+            } else {
+              Modifier
+            },
+          )
+          .clip(pill)
           .background(
-            if (active) MaterialTheme.colorScheme.surfaceContainerLowest
-            else androidx.compose.ui.graphics.Color.Transparent,
+            if (active) MaterialTheme.colorScheme.surface else Color.Transparent,
           )
           .clickable { onSelect(value) }
-          .padding(vertical = 9.dp),
+          .padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.Center,
       ) {
         Text(
@@ -186,6 +193,7 @@ fun <T> SegmentedChoice(
           } else {
             MaterialTheme.colorScheme.onSurfaceVariant
           },
+          maxLines = 1,
         )
       }
     }

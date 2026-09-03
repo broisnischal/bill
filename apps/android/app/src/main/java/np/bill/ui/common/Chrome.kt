@@ -10,12 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.CloudQueue
-import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.PrintDisabled
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,12 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import np.bill.ui.theme.BillIcons
 import np.bill.R
+import np.bill.ui.theme.LocalTokens
 
 /**
  * The two things a shopkeeper glances at between customers: is the printer there, and has
@@ -49,7 +44,7 @@ fun StatusIcons(
       else -> stringResource(R.string.printer_none)
     }
     Icon(
-      imageVector = if (printerConnected) Icons.Filled.Print else Icons.Filled.PrintDisabled,
+      imageVector = if (printerConnected) BillIcons.Printer else BillIcons.PrinterOff,
       contentDescription = printerLabel,
       tint = if (printerConnected) {
         MaterialTheme.colorScheme.primary
@@ -69,14 +64,14 @@ fun StatusIcons(
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
         imageVector = when {
-          offline -> Icons.Filled.CloudOff
-          pendingSync > 0 -> Icons.Filled.CloudQueue
-          else -> Icons.Filled.CloudDone
+          offline -> BillIcons.CloudOff
+          pendingSync > 0 -> BillIcons.Cloud
+          else -> BillIcons.CloudCheck
         },
         contentDescription = syncLabel,
         tint = when {
           offline -> MaterialTheme.colorScheme.onSurfaceVariant
-          pendingSync > 0 -> Amber
+          pendingSync > 0 -> LocalTokens.current.warning
           else -> MaterialTheme.colorScheme.primary
         },
         modifier = Modifier.size(22.dp),
@@ -86,7 +81,7 @@ fun StatusIcons(
         Text(
           pendingSync.toString(),
           style = MaterialTheme.typography.labelMedium,
-          color = Amber,
+          color = LocalTokens.current.warning,
           modifier = Modifier.semantics { contentDescription = syncLabel },
         )
       }
@@ -119,6 +114,3 @@ fun CountBadge(count: Int, modifier: Modifier = Modifier) {
     }
   }
 }
-
-/** Warm amber for "not finished yet", which neither green nor red says. */
-val Amber = Color(0xFF8A6D00)

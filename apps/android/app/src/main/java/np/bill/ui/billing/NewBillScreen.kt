@@ -14,10 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -32,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -41,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,12 +57,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
@@ -72,20 +64,28 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import np.bill.ui.theme.BillIcons
 import np.bill.scan.CodeScanner
 import np.bill.scan.ScanTarget
 import np.bill.R
 import np.bill.ui.common.Hairline
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import np.bill.ui.common.Notice
 import np.bill.ui.common.PaymentChip
+import np.bill.core.money.formatQuantity
 import np.bill.ui.common.BsDateField
 import np.bill.ui.common.CalculatorSheet
+import np.bill.ui.common.ChoiceChip
+import np.bill.ui.common.CompactPicker
 import np.bill.ui.common.Field
 import np.bill.ui.common.Hairline
 import np.bill.ui.common.NoticeTone
+import np.bill.ui.common.InitialTile
+import np.bill.ui.common.Panel
+import np.bill.ui.common.QuantityStepper
+import np.bill.ui.theme.LocalTokens
 import np.bill.ui.common.PickerField
 import np.bill.ui.common.PrimaryButton
 import np.bill.ui.theme.Radius
@@ -105,6 +105,7 @@ fun NewBillScreen(
   onBack: () -> Unit,
   startItemIds: List<String> = emptyList(),
   startCustomerId: String? = null,
+  startTemplateId: String? = null,
   viewModel: BillingViewModel = hiltViewModel(),
 ) {
   val state by viewModel.newBill.collectAsStateWithLifecycle()
@@ -115,6 +116,9 @@ fun NewBillScreen(
   var pickingFor by remember { mutableStateOf<Long?>(null) }
   var pickingCustomer by remember { mutableStateOf(false) }
   var calculatingFor by remember { mutableStateOf<Long?>(null) }
+  val savedQrs by viewModel.paymentQrs.collectAsStateWithLifecycle()
+  val regulars by viewModel.recentBuyers.collectAsStateWithLifecycle()
+  var showingQr by remember { mutableStateOf<np.bill.data.repo.SavedPaymentQr?>(null) }
 
   var cameraGranted by remember {
     mutableStateOf(
@@ -131,6 +135,12 @@ fun NewBillScreen(
     viewModel.startWith(startItemIds, startCustomerId)
   }
 
+  // Opened from a quick-bill chip: the basket is already on the bill and the only thing
+  // left is usually the weight.
+  LaunchedEffect(startTemplateId) {
+    startTemplateId?.let(viewModel::startFromTemplate)
+  }
+
   // Asking for the camera the moment a scan is wanted, not at startup.
   LaunchedEffect(scanning) {
     if (scanning != ScanMode.NONE && !cameraGranted) {
@@ -140,28 +150,33 @@ fun NewBillScreen(
   }
 
   Scaffold(
+    containerColor = MaterialTheme.colorScheme.background,
     topBar = {
       TopAppBar(
         title = { Text(stringResource(R.string.new_bill)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = null)
+            Icon(BillIcons.ArrowLeft, contentDescription = null)
           }
         },
         actions = {
           IconButton(onClick = { scanning = ScanMode.PRODUCT }) {
             Icon(
-              Icons.Filled.QrCodeScanner,
+              BillIcons.ScanLine,
               contentDescription = stringResource(R.string.scan_barcode),
             )
           }
           IconButton(onClick = { scanning = ScanMode.CUSTOMER }) {
             Icon(
-              Icons.Filled.Badge,
+              BillIcons.IdCard,
               contentDescription = stringResource(R.string.scan_customer),
             )
           }
         },
+        colors = TopAppBarDefaults.topAppBarColors(
+          containerColor = androidx.compose.ui.graphics.Color.Transparent,
+          scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
       )
     },
     bottomBar = {
@@ -170,7 +185,7 @@ fun NewBillScreen(
         Column(Modifier.fillMaxWidth().imePadding().padding(20.dp)) {
           TotalsRow(
             label = stringResource(R.string.total),
-            value = "Rs ${formatPaisa(totals.totalPaisa)}",
+            value = "Rs ${formatMoney(totals.totalPaisa)}",
             emphasised = true,
           )
           Spacer(Modifier.height(12.dp))
@@ -198,9 +213,11 @@ fun NewBillScreen(
         LineEditor(
           line = line,
           canRemove = state.lines.size > 1,
+          suggestions = viewModel.itemSuggestions(line.description),
           onChange = handlers.onChange,
           onRemove = handlers.onRemove,
           onPick = { pickingFor = line.id },
+          onUse = { viewModel.pickItems(line.id, listOf(it)) },
           onCalculate = { calculatingFor = line.id },
         )
         HorizontalDivider(Modifier.padding(horizontal = 20.dp))
@@ -211,7 +228,7 @@ fun NewBillScreen(
           onClick = viewModel::addLine,
           modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         ) {
-          Icon(Icons.Filled.Add, contentDescription = null)
+          Icon(BillIcons.Plus, contentDescription = null)
           Spacer(Modifier.width(8.dp))
           Text(stringResource(R.string.add_item))
         }
@@ -222,91 +239,125 @@ fun NewBillScreen(
           Hairline()
           Spacer(Modifier.height(16.dp))
 
-          TotalsRow(stringResource(R.string.sub_total), formatPaisa(totals.subTotalPaisa))
+          TotalsRow(stringResource(R.string.sub_total), formatMoney(totals.subTotalPaisa))
           if (totals.discountPaisa > 0) {
-            TotalsRow(stringResource(R.string.discount), "-${formatPaisa(totals.discountPaisa)}")
+            TotalsRow(stringResource(R.string.discount), "-${formatMoney(totals.discountPaisa)}")
           }
           if (totals.nonTaxableAmountPaisa > 0) {
-            TotalsRow(stringResource(R.string.exempt), formatPaisa(totals.nonTaxableAmountPaisa))
+            TotalsRow(stringResource(R.string.exempt), formatMoney(totals.nonTaxableAmountPaisa))
           }
           if (state.vatRateBp > 0) {
-            TotalsRow(stringResource(R.string.taxable), formatPaisa(totals.taxableAmountPaisa))
+            TotalsRow(stringResource(R.string.taxable), formatMoney(totals.taxableAmountPaisa))
             TotalsRow(
               stringResource(R.string.vat_at, state.vatRateBp / 100),
-              formatPaisa(totals.vatAmountPaisa),
+              formatMoney(totals.vatAmountPaisa),
             )
           }
 
-          Spacer(Modifier.height(20.dp))
-          OutlinedTextField(
+          Spacer(Modifier.height(16.dp))
+          Field(
             value = state.discount,
             onValueChange = viewModel::onDiscount,
-            label = { Text(stringResource(R.string.discount)) },
-            singleLine = true,
+            label = stringResource(R.string.discount),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth(),
           )
 
-          Spacer(Modifier.height(20.dp))
-          OutlinedTextField(
+          Spacer(Modifier.height(12.dp))
+
+          // The faces this counter sees. One tap fills the name, the phone and the PAN
+          // from the last bill they were on, which is the whole of "choosing a
+          // customer" for a shop that serves the same people every week. Taken from the
+          // bills rather than the customer list, so a walk-in typed once counts.
+          if (regulars.isNotEmpty() && state.buyerName.isBlank()) {
+            Row(
+              Modifier.horizontalScroll(rememberScrollState()),
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+              for (buyer in regulars) {
+                Row(
+                  Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(
+                      1.dp,
+                      LocalTokens.current.borderStrong,
+                      RoundedCornerShape(Radius.pill),
+                    )
+                    .clickable { viewModel.useRecentBuyer(buyer) }
+                    .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+                  verticalAlignment = Alignment.CenterVertically,
+                ) {
+                  InitialTile(buyer.name, size = 30.dp)
+                  Spacer(Modifier.width(8.dp))
+                  Text(
+                    buyer.name,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                  )
+                }
+              }
+            }
+            Spacer(Modifier.height(10.dp))
+          }
+
+          // Required, and said so before it is refused rather than after. A shop that
+          // cannot name half its bills cannot search its own history, and "Cash
+          // customer" printed forty times is the same as nothing written down.
+          Field(
             value = state.buyerName,
             onValueChange = viewModel::onBuyerName,
-            label = { Text(stringResource(R.string.buyer_name)) },
-            placeholder = { Text(stringResource(R.string.buyer_name_default)) },
-            singleLine = true,
+            label = stringResource(R.string.buyer_name),
+            placeholder = stringResource(R.string.buyer_name_default),
+            hint = stringResource(R.string.required),
             trailingIcon = {
               IconButton(onClick = { pickingCustomer = true }) {
                 Icon(
-                  Icons.Filled.Groups,
+                  BillIcons.Users,
                   contentDescription = stringResource(R.string.search_customers),
+                  tint = MaterialTheme.colorScheme.primary,
                 )
               }
             },
-            modifier = Modifier.fillMaxWidth(),
           )
-          Spacer(Modifier.height(12.dp))
-          OutlinedTextField(
+          Field(
             value = state.buyerPhone,
             onValueChange = viewModel::onBuyerPhone,
-            label = { Text(stringResource(R.string.buyer_phone)) },
-            singleLine = true,
+            label = stringResource(R.string.buyer_phone),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            modifier = Modifier.fillMaxWidth(),
           )
-          Spacer(Modifier.height(12.dp))
-          OutlinedTextField(
+          Field(
             value = state.buyerPan,
             onValueChange = viewModel::onBuyerPan,
-            label = { Text(stringResource(R.string.buyer_pan)) },
-            singleLine = true,
+            label = stringResource(R.string.buyer_pan),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
           )
-
-          Spacer(Modifier.height(12.dp))
-          OutlinedTextField(
+          Field(
             value = state.notes,
             onValueChange = viewModel::onNotes,
-            label = { Text(stringResource(R.string.notes)) },
+            label = stringResource(R.string.notes),
             singleLine = false,
             minLines = 2,
-            modifier = Modifier.fillMaxWidth(),
           )
 
-          Spacer(Modifier.height(20.dp))
-          Text(stringResource(R.string.bill_type), style = MaterialTheme.typography.labelLarge)
-          Spacer(Modifier.height(8.dp))
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-              selected = state.invoiceType == "tax_invoice",
-              onClick = { viewModel.onInvoiceType("tax_invoice") },
-              label = { Text(stringResource(R.string.type_tax_invoice)) },
-            )
-            FilterChip(
-              selected = state.invoiceType == "abbreviated_tax_invoice",
-              onClick = { viewModel.onInvoiceType("abbreviated_tax_invoice") },
-              label = { Text(stringResource(R.string.type_abbreviated)) },
-            )
+          // Tax invoice against abbreviated tax invoice is a VAT distinction — the
+          // abbreviated form exists because a VAT taxpayer may issue it below a
+          // threshold. With VAT off there is one kind of bill, so asking is noise.
+          if (np.bill.BuildConfig.VAT_ENABLED) {
+            Spacer(Modifier.height(20.dp))
+            Text(stringResource(R.string.bill_type), style = MaterialTheme.typography.labelLarge)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              ChoiceChip(
+                text = stringResource(R.string.type_tax_invoice),
+                selected = state.invoiceType == "tax_invoice",
+                onClick = { viewModel.onInvoiceType("tax_invoice") },
+              )
+              ChoiceChip(
+                text = stringResource(R.string.type_abbreviated),
+                selected = state.invoiceType == "abbreviated_tax_invoice",
+                onClick = { viewModel.onInvoiceType("abbreviated_tax_invoice") },
+              )
+            }
           }
 
           Spacer(Modifier.height(20.dp))
@@ -335,7 +386,7 @@ fun NewBillScreen(
               label = stringResource(R.string.paid_now),
               placeholder = "0",
               keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-              hint = stringResource(R.string.owes_now, formatPaisa(state.owedPaisa)),
+              hint = stringResource(R.string.owes_now, formatMoney(state.owedPaisa)),
             )
             BsDateField(
               value = state.dueMiti,
@@ -357,13 +408,26 @@ fun NewBillScreen(
               PaymentChip(
                 method = method,
                 selected = state.paymentMethod == method,
-                onClick = { viewModel.onPaymentMethod(method) },
+                onClick = {
+                  viewModel.onPaymentMethod(method)
+                  // The customer is standing there waiting to pay: choosing the wallet
+                  // and showing them its code is one action, not two screens apart.
+                  showingQr = savedQrs.firstOrNull { it.method.id == method }
+                },
               )
             }
           }
         }
       }
     }
+  }
+
+  showingQr?.let { qr ->
+    np.bill.ui.payments.QrFullScreen(
+      qr = qr,
+      amountPaisa = state.totals.totalPaisa,
+      onDismiss = { showingQr = null },
+    )
   }
 
   if (scanning != ScanMode.NONE && cameraGranted) {
@@ -475,27 +539,48 @@ private fun ChoiceCard(
 private fun LineEditor(
   line: DraftLine,
   canRemove: Boolean,
+  suggestions: kotlinx.coroutines.flow.Flow<List<np.bill.data.db.ItemEntity>>,
   onChange: ((DraftLine) -> DraftLine) -> Unit,
   onRemove: () -> Unit,
   onPick: () -> Unit,
+  onUse: (np.bill.data.db.ItemEntity) -> Unit,
   onCalculate: () -> Unit,
 ) {
   val input = line.toInput()
   val amount = input?.let { it.quantityMilli * it.unitPricePaisa / 1000 } ?: 0L
 
-  Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+  // What the shop already sells, matched against what is being typed. Only while the
+  // line is still loose: once a product is on it the list has served its purpose, and
+  // leaving it open pushes the rate field under the thumb about to reach for it.
+  val matches by suggestions.collectAsStateWithLifecycle(emptyList())
+  val offered = if (line.itemId == null && line.description.trim().length >= 2) {
+    matches.take(4)
+  } else {
+    emptyList()
+  }
+
+  /**
+   * What is in the amount box while it is being typed into.
+   *
+   * Null means the box shows quantity times rate, which is what will print. It is set
+   * while the shopkeeper is typing an amount and cleared the moment they touch the
+   * quantity or the rate, so whichever end they work from, the other follows.
+   */
+  var typed by remember(line.id) { mutableStateOf<String?>(null) }
+
+  Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      OutlinedTextField(
+      Field(
         value = line.description,
-        onValueChange = { value -> onChange { it.copy(description = value) } },
-        label = { Text(stringResource(R.string.item_name)) },
-        singleLine = true,
+        onValueChange = { value -> onChange { it.copy(description = value, itemId = null) } },
+        label = stringResource(R.string.item_name),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
         trailingIcon = {
           IconButton(onClick = onPick) {
             Icon(
-              Icons.Filled.Inventory2,
+              BillIcons.Package,
               contentDescription = stringResource(R.string.pick_product),
+              tint = MaterialTheme.colorScheme.primary,
             )
           }
         },
@@ -503,57 +588,168 @@ private fun LineEditor(
       )
       if (canRemove) {
         IconButton(onClick = onRemove) {
-          Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.remove))
+          Icon(
+            BillIcons.X,
+            contentDescription = stringResource(R.string.remove),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
         }
       }
     }
 
-    Spacer(Modifier.height(8.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      OutlinedTextField(
+    if (offered.isNotEmpty()) {
+      Panel {
+        for ((index, match) in offered.withIndex()) {
+          if (index > 0) Hairline()
+          Row(
+            Modifier
+              .fillMaxWidth()
+              .clickable { onUse(match) }
+              .padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            Column(Modifier.weight(1f)) {
+              Text(match.name, style = MaterialTheme.typography.bodyLarge)
+              match.stockThousandths?.let { stock ->
+                Text(
+                  if (stock <= 0) {
+                    stringResource(R.string.stock_out)
+                  } else {
+                    stringResource(R.string.stock_left, formatQuantity(stock), match.unit)
+                  },
+                  style = MaterialTheme.typography.labelMedium,
+                  color = if (stock <= 0) {
+                    LocalTokens.current.warning
+                  } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                  },
+                )
+              }
+            }
+            Text(
+              "Rs ${formatMoney(match.unitPricePaisa)}",
+              style = MaterialTheme.typography.titleMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+        }
+      }
+      Spacer(Modifier.height(10.dp))
+    }
+
+    Row(verticalAlignment = Alignment.Top) {
+      QuantityStepper(
         value = line.quantity,
-        onValueChange = { value -> onChange { it.copy(quantity = value) } },
-        label = { Text(stringResource(R.string.quantity)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
-        modifier = Modifier.width(88.dp),
+        onValueChange = { value ->
+          // Editing the quantity releases the amount field, so the amount follows the
+          // kilos as readily as the kilos follow the amount.
+          typed = null
+          onChange { it.copy(quantity = value) }
+        },
       )
       Spacer(Modifier.width(8.dp))
-      PickerField(
+      CompactPicker(
         value = line.unit,
         options = np.bill.core.unit.Unit.codes,
         onPick = { unit -> onChange { it.copy(unit = unit) } },
-        label = stringResource(R.string.unit),
-        modifier = Modifier.width(104.dp),
+        title = stringResource(R.string.unit),
+        modifier = Modifier.width(88.dp),
       )
       Spacer(Modifier.width(8.dp))
-      OutlinedTextField(
+      Field(
         value = line.rate,
-        onValueChange = { value -> onChange { it.copy(rate = value) } },
-        label = { Text(stringResource(R.string.rate)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
-        trailingIcon = {
-          IconButton(onClick = onCalculate) {
-            Icon(
-              Icons.Filled.Calculate,
-              contentDescription = stringResource(R.string.calculator),
-            )
-          }
+        onValueChange = { value ->
+          typed = null
+          onChange { it.copy(rate = value) }
         },
+        label = stringResource(R.string.rate),
+        // Label-free like the two beside it: a floated label pushes its box down inside
+        // the row, which is what left the rate sitting lower than the quantity.
+        showLabel = false,
+        placeholder = stringResource(R.string.rate),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
         modifier = Modifier.weight(1f),
       )
     }
 
-    Spacer(Modifier.height(6.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      FilterChip(
-        selected = !line.vatApplicable,
-        onClick = { onChange { it.copy(vatApplicable = !it.vatApplicable) } },
-        label = { Text(stringResource(R.string.vat_exempt)) },
+    Row(verticalAlignment = Alignment.Top) {
+      // Nothing is exempt from a tax nobody is charging. Hidden with the rest of VAT.
+      if (np.bill.BuildConfig.VAT_ENABLED) {
+        ChoiceChip(
+          text = stringResource(R.string.vat_exempt),
+          selected = !line.vatApplicable,
+          onClick = { onChange { it.copy(vatApplicable = !it.vatApplicable) } },
+        )
+        Spacer(Modifier.width(8.dp))
+      }
+
+      /**
+       * The amount, and it works backwards.
+       *
+       * "Give me two hundred rupees of masu" is how a counter actually works, so typing
+       * 200 against a rate of 1300 a kilo sets the quantity to 0.154 rather than making
+       * the shopkeeper do the division. With no rate yet but a quantity on the line it
+       * goes the other way and sets the rate, which is the "250 for three of these"
+       * case.
+       *
+       * The quantity stays the source of truth: what prints is always quantity times
+       * rate, so the field snaps to the nearest achievable amount when it loses focus
+       * rather than promising a total the line cannot add up to.
+       */
+      Field(
+        value = typed ?: formatMoney(amount),
+        onValueChange = { value ->
+          typed = value
+          // Commas come from the formatted value the field was showing a moment ago,
+          // and from anything pasted in. They are not part of a number.
+          val wanted = np.bill.core.money.parsePaisa(value.replace(",", "")) ?: return@Field
+          val rate = np.bill.core.money.parsePaisa(line.rate)
+          val quantity = np.bill.core.money.parseQuantityMilli(line.quantity)
+
+          when {
+            // Rounded, not truncated. Truncating 100 at 1300 a kilo printed 98.80,
+            // which is a rupee and twenty off what the customer asked for; rounding
+            // lands on the nearest amount the line can actually add up to.
+            rate != null && rate > 0 -> onChange {
+              it.copy(
+                quantity = np.bill.core.money.formatQuantity(
+                  np.bill.core.money.roundQuantityMilli((wanted * 1000 + rate / 2) / rate),
+                ),
+              )
+            }
+            quantity != null && quantity > 0 -> onChange {
+              it.copy(
+                rate = np.bill.core.money.paisaToInput(
+                  (wanted * 1000 + quantity / 2) / quantity,
+                ),
+              )
+            }
+            else -> Unit
+          }
+        },
+        label = stringResource(R.string.amount),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        textStyle = MaterialTheme.typography.titleLarge,
+        placeholder = formatMoney(amount),
+        modifier = Modifier
+          .weight(1f)
+          .onFocusChanged { focus ->
+            // Clears on the way in, because "Rs 200 of masu" is typed from scratch and
+            // appending 200 to a formatted 1,300.00 is what everybody actually did.
+            // Snaps back on the way out to what will really print, which is quantity
+            // times rate and not always the round number that was asked for.
+            typed = if (focus.isFocused) "" else null
+          },
       )
-      Spacer(Modifier.weight(1f))
-      Text(formatPaisa(amount), style = MaterialTheme.typography.titleMedium)
+
+      Spacer(Modifier.width(4.dp))
+      IconButton(onClick = onCalculate, modifier = Modifier.padding(top = 6.dp)) {
+        Icon(
+          BillIcons.Calculator,
+          contentDescription = stringResource(R.string.calculator),
+          tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
     }
   }
 }
@@ -654,7 +850,7 @@ private fun ProductPickerSheet(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
-        Text(formatPaisa(item.unitPricePaisa), style = MaterialTheme.typography.titleMedium)
+        Text(formatMoney(item.unitPricePaisa), style = MaterialTheme.typography.titleMedium)
       }
     }
   }
@@ -754,7 +950,7 @@ private fun PickerSheet(
         value = query,
         onValueChange = onQuery,
         placeholder = { Text(stringResource(R.string.search)) },
-        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        leadingIcon = { Icon(BillIcons.Search, contentDescription = null) },
         singleLine = true,
         shape = RoundedCornerShape(Radius.large),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -807,7 +1003,7 @@ private fun AddNewRow(label: String, onClick: () -> Unit) {
     verticalAlignment = Alignment.CenterVertically,
   ) {
     Icon(
-      Icons.Filled.Add,
+      BillIcons.Plus,
       contentDescription = null,
       tint = MaterialTheme.colorScheme.primary,
       modifier = Modifier.size(18.dp),

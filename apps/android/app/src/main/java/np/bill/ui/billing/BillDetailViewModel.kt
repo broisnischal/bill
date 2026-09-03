@@ -52,6 +52,7 @@ class BillDetailViewModel @Inject constructor(
   private val billing: BillingRepository,
   private val session: SessionStore,
   private val printer: ThermalPrinter,
+  private val templates: np.bill.data.repo.TemplateRepository,
   private val pdf: PdfExporter,
   private val application: Application,
 ) : ViewModel() {
@@ -60,6 +61,28 @@ class BillDetailViewModel @Inject constructor(
   val state = _state.asStateFlow()
 
   private val renderer = ReceiptRenderer()
+
+  /**
+   * Keeps this bill's lines as a named template.
+   *
+   * Made from a finished bill rather than from a blank form: a shop knows what it sells
+   * together by having sold it, and the fastest way to teach the app a basket is to
+   * point at one it has already printed.
+   */
+  fun saveAsTemplate(name: String) {
+    val billId = _state.value.bill?.id ?: return
+    viewModelScope.launch {
+      val saved = templates.saveFromBill(name, billId)
+      _state.update {
+        it.copy(
+          message = application.getString(
+            if (saved) np.bill.R.string.template_saved else np.bill.R.string.template_empty,
+          ),
+          messageIsError = !saved,
+        )
+      }
+    }
+  }
 
   fun load(billId: String) {
     viewModelScope.launch {
@@ -89,7 +112,7 @@ class BillDetailViewModel @Inject constructor(
           name = store.name,
           nameNepali = store.nameNepali,
           pan = store.pan,
-          vatRegistered = store.taxpayerType == "vat",
+          vatRegistered = np.bill.BuildConfig.VAT_ENABLED && store.taxpayerType == "vat",
           address = listOfNotNull(
             store.address,
             store.ward?.let { "Ward $it" },

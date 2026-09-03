@@ -16,10 +16,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +33,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import np.bill.ui.theme.LocalTokens
+import np.bill.ui.theme.BillIcons
 import np.bill.R
 import np.bill.core.nepali.BsCalendar
 import np.bill.core.nepali.BsDate
@@ -104,86 +102,91 @@ fun BsDatePickerDialog(
 
   val days = remember(year, month) { BsCalendar.daysInMonth(year, month) }
 
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    confirmButton = {
-      TextButton(onClick = { onPick(selected) }) { Text(stringResource(R.string.done)) }
+  // A sheet, not a dialog. A calendar is a grid of forty targets and a box floating in
+  // the middle of the screen puts every one of them out of thumb reach.
+  FormSheet(
+    title = stringResource(R.string.pick_date),
+    onDismiss = onDismiss,
+    heightFraction = 0.62f,
+    action = {
+      PrimaryButton(text = stringResource(R.string.done), onClick = { onPick(selected) })
     },
-    dismissButton = {
-      TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-    },
-    title = {
-      Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        IconButton(onClick = {
-          if (month == 1) {
-            if (year > BsCalendar.EPOCH_YEAR) { year--; month = 12 }
-          } else {
-            month--
-          }
-        }) {
-          Icon(Icons.Filled.ChevronLeft, contentDescription = null)
+  ) {
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      IconButton(onClick = {
+        if (month == 1) {
+          if (year > BsCalendar.EPOCH_YEAR) { year--; month = 12 }
+        } else {
+          month--
         }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-          Text(
-            "${BsCalendar.MONTHS_EN[month - 1]} $year",
-            style = MaterialTheme.typography.titleMedium,
-          )
-          Text(
-            "${BsCalendar.MONTHS_NE[month - 1]} ${BsCalendar.toNepaliDigits(year.toString())}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        }
-
-        IconButton(onClick = {
-          if (month == 12) {
-            if (year < BsCalendar.LAST_YEAR) { year++; month = 1 }
-          } else {
-            month++
-          }
-        }) {
-          Icon(Icons.Filled.ChevronRight, contentDescription = null)
-        }
+      }) {
+        Icon(BillIcons.ChevronLeft, contentDescription = null)
       }
-    },
-    text = {
-      LazyVerticalGrid(
-        columns = GridCells.Fixed(7),
-        modifier = Modifier.height(240.dp),
-      ) {
-        items((1..days).toList(), key = { it }) { day ->
-          val isSelected = selected.year == year && selected.month == month && selected.day == day
-          Box(
-            Modifier
-              .padding(2.dp)
-              .aspectRatio(1f)
-              .clip(CircleShape)
-              .background(
-                if (isSelected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
-              )
-              .clickable { selected = BsDate(year, month, day) },
-            contentAlignment = Alignment.Center,
-          ) {
-            Text(
-              BsCalendar.toNepaliDigits(day.toString()),
-              style = MaterialTheme.typography.bodyLarge,
-              textAlign = TextAlign.Center,
-              color = if (isSelected) {
-                MaterialTheme.colorScheme.onPrimary
+
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+          "${BsCalendar.MONTHS_EN[month - 1]} $year",
+          style = MaterialTheme.typography.titleLarge,
+        )
+        Text(
+          "${BsCalendar.MONTHS_NE[month - 1]} ${BsCalendar.toNepaliDigits(year.toString())}",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+
+      IconButton(onClick = {
+        if (month == 12) {
+          if (year < BsCalendar.LAST_YEAR) { year++; month = 1 }
+        } else {
+          month++
+        }
+      }) {
+        Icon(BillIcons.ChevronRight, contentDescription = null)
+      }
+    }
+
+    Spacer(Modifier.height(8.dp))
+    LazyVerticalGrid(
+      columns = GridCells.Fixed(7),
+      modifier = Modifier.height(260.dp),
+    ) {
+      items((1..days).toList(), key = { it }) { day ->
+        val isSelected = selected.year == year && selected.month == month && selected.day == day
+        Box(
+          Modifier
+            .padding(3.dp)
+            .aspectRatio(1f)
+            .clip(CircleShape)
+            .background(
+              if (isSelected) {
+                LocalTokens.current.ink
               } else {
-                MaterialTheme.colorScheme.onSurface
+                androidx.compose.ui.graphics.Color.Transparent
               },
             )
-          }
+            .clickable { selected = BsDate(year, month, day) },
+          contentAlignment = Alignment.Center,
+        ) {
+          Text(
+            BsCalendar.toNepaliDigits(day.toString()),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = if (isSelected) {
+              LocalTokens.current.onInk
+            } else {
+              MaterialTheme.colorScheme.onSurface
+            },
+          )
         }
       }
-    },
-  )
+    }
+    Spacer(Modifier.height(8.dp))
+  }
 }
 
 /**

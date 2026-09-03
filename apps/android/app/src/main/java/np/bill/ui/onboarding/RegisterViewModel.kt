@@ -20,7 +20,14 @@ data class RegisterState(
   val name: String = "",
   val nameNepali: String = "",
   val pan: String = "",
-  val taxpayerType: String = "vat",
+  /**
+   * PAN unless the shop turns VAT on in settings later.
+   *
+   * Registering for VAT is a separate filing with the IRD that most small shops have
+   * not made, and asking a shopkeeper to answer it during sign-up got the wrong answer
+   * often enough that bills were charging 13% for shops that must not.
+   */
+  val taxpayerType: String = "pan",
   val registrationDateBs: String = "",
   val address: String = "",
   val ward: String = "",
@@ -34,12 +41,33 @@ data class RegisterState(
   val error: String? = null,
   val locationMessage: String? = null,
   val locationFound: Boolean = false,
+  /** Which question is on screen. Three, and each one fits without scrolling. */
+  val step: Int = 0,
 ) {
-  val valid: Boolean
-    get() = name.trim().length >= 2 &&
-      pan.length == 9 &&
-      address.trim().length >= 2 &&
-      BsDate.parse(registrationDateBs) != null
+  /**
+   * One question per screen, and each step says whether it has been answered.
+   *
+   * The form used to be ten fields on one page, which is a wall a shopkeeper reads as
+   * work rather than as three easy questions. Nothing about what the IRD needs changed;
+   * only how much of it is asked at once.
+   */
+  val nameDone: Boolean get() = name.trim().length >= 2
+
+  val panDone: Boolean get() = pan.length == 9 && BsDate.parse(registrationDateBs) != null
+
+  val placeDone: Boolean get() = address.trim().length >= 2
+
+  fun stepDone(index: Int): Boolean = when (index) {
+    0 -> nameDone
+    1 -> panDone
+    else -> placeDone
+  }
+
+  val valid: Boolean get() = nameDone && panDone && placeDone
+
+  companion object {
+    const val STEPS = 3
+  }
 }
 
 @HiltViewModel
@@ -72,6 +100,12 @@ class RegisterViewModel @Inject constructor(
     val keepDistrict = Nepal.districtsOf(value).any { d -> d == it.district }
     it.copy(province = value, district = if (keepDistrict) it.district else "")
   }
+
+  fun next() = _state.update {
+    if (it.stepDone(it.step)) it.copy(step = minOf(it.step + 1, RegisterState.STEPS - 1)) else it
+  }
+
+  fun back() = _state.update { it.copy(step = maxOf(it.step - 1, 0)) }
 
   fun canUseLocation(): Boolean = location.hasPermission()
 

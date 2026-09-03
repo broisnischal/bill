@@ -84,7 +84,7 @@ fun SignInScreen(onCodeSent: (String) -> Unit, viewModel: AuthViewModel) {
     if (state.offline || state.error != null) {
       Spacer(Modifier.height(16.dp))
       Notice(
-        text = state.error ?: stringResource(R.string.offline_banner),
+        text = state.error ?: stringResource(R.string.sign_in_offline),
         tone = if (state.error != null) NoticeTone.ERROR else NoticeTone.WARN,
       )
     }

@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 import np.bill.data.prefs.SessionStore
 import np.bill.data.repo.AuthRepository
 import np.bill.data.repo.SyncRepository
+import np.bill.data.repo.UpdateRepository
+import np.bill.data.repo.UpdateStatus
 import np.bill.print.ThermalPrinter
 
 data class SettingsState(
@@ -23,6 +25,10 @@ data class SettingsState(
   val selectedPrinter: String? = null,
   val bluetoothAllowed: Boolean = false,
   val syncMessage: String? = null,
+  val versionName: String = np.bill.BuildConfig.VERSION_NAME,
+  val versionCode: Int = np.bill.BuildConfig.VERSION_CODE,
+  val checkingUpdate: Boolean = false,
+  val updateMessage: String? = null,
 )
 
 @HiltViewModel
@@ -30,6 +36,7 @@ class SettingsViewModel @Inject constructor(
   private val session: SessionStore,
   private val auth: AuthRepository,
   private val sync: SyncRepository,
+  private val updates: UpdateRepository,
   private val printer: ThermalPrinter,
   private val application: Application,
 ) : ViewModel() {
@@ -89,6 +96,30 @@ class SettingsViewModel @Inject constructor(
             outcome.offline -> application.getString(np.bill.R.string.offline_banner)
             outcome.error != null -> outcome.error
             else -> "${outcome.filed} synced · ${outcome.numbersLeft} numbers ready"
+          },
+        )
+      }
+    }
+  }
+
+  /**
+   * Asks now rather than waiting for the every-few-hours check.
+   *
+   * Only the "nothing to do" answer is reported here. Anything else is an update, and
+   * the gate over the whole app is what shows those, so a shopkeeper who taps this and a
+   * shopkeeper who just opened the app are looking at the same thing.
+   */
+  fun checkForUpdates() {
+    viewModelScope.launch {
+      _state.update { it.copy(checkingUpdate = true, updateMessage = null) }
+      val status = updates.refresh(force = true)
+      _state.update {
+        it.copy(
+          checkingUpdate = false,
+          updateMessage = if (status == UpdateStatus.UpToDate) {
+            application.getString(np.bill.R.string.update_newest)
+          } else {
+            null
           },
         )
       }

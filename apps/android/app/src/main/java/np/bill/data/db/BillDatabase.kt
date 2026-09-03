@@ -29,8 +29,10 @@ data class BillWithDue(
     CustomerEntity::class,
     WalletBillEntity::class,
     PaymentQrEntity::class,
+    BillTemplateEntity::class,
+    BillTemplateLineEntity::class,
   ],
-  version = 8,
+  version = 10,
   exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -41,6 +43,7 @@ abstract class BillDatabase : RoomDatabase() {
   abstract fun wallet(): WalletDao
   abstract fun storeData(): StoreDataDao
   abstract fun paymentQrs(): PaymentQrDao
+  abstract fun templates(): TemplateDao
 
   companion object {
     /**
@@ -98,6 +101,37 @@ abstract class BillDatabase : RoomDatabase() {
     val MIGRATION_7_8 = object : Migration(7, 8) {
       override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE payment_qr ADD COLUMN payload TEXT")
+      }
+    }
+
+    /** Stock and labels: what is on the shelf, and how the shop groups what it sells. */
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+      override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE item ADD COLUMN stockThousandths INTEGER")
+        db.execSQL("ALTER TABLE item ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+      }
+    }
+
+    /** Bill templates: the baskets a shop rings up over and over. */
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+      override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL(
+          "CREATE TABLE IF NOT EXISTS bill_template (" +
+            "id TEXT NOT NULL PRIMARY KEY, name TEXT NOT NULL, " +
+            "usedCount INTEGER NOT NULL DEFAULT 0, updatedAt INTEGER NOT NULL)",
+        )
+        db.execSQL(
+          "CREATE TABLE IF NOT EXISTS bill_template_line (" +
+            "rowId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, templateId TEXT NOT NULL, " +
+            "lineNo INTEGER NOT NULL, itemId TEXT, description TEXT NOT NULL, " +
+            "unit TEXT NOT NULL, quantityMilli INTEGER NOT NULL, " +
+            "unitPricePaisa INTEGER NOT NULL, vatApplicable INTEGER NOT NULL, " +
+            "FOREIGN KEY(templateId) REFERENCES bill_template(id) ON DELETE CASCADE)",
+        )
+        db.execSQL(
+          "CREATE INDEX IF NOT EXISTS index_bill_template_line_templateId " +
+            "ON bill_template_line (templateId)",
+        )
       }
     }
 

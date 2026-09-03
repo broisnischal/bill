@@ -216,6 +216,41 @@ interface LeaseDao {
 }
 
 @Dao
+interface TemplateDao {
+
+  @Transaction
+  @Query("SELECT * FROM bill_template ORDER BY usedCount DESC, name")
+  fun observe(): Flow<List<BillTemplate>>
+
+  @Transaction
+  @Query("SELECT * FROM bill_template WHERE id = :id")
+  suspend fun byId(id: String): BillTemplate?
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertTemplate(template: BillTemplateEntity)
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertLines(lines: List<BillTemplateLineEntity>)
+
+  @Query("DELETE FROM bill_template_line WHERE templateId = :id")
+  suspend fun clearLines(id: String)
+
+  @Query("DELETE FROM bill_template WHERE id = :id")
+  suspend fun delete(id: String)
+
+  /** Saving over a template replaces its lines rather than adding a second set. */
+  @Transaction
+  suspend fun save(template: BillTemplateEntity, lines: List<BillTemplateLineEntity>) {
+    insertTemplate(template)
+    clearLines(template.id)
+    insertLines(lines)
+  }
+
+  @Query("UPDATE bill_template SET usedCount = usedCount + 1 WHERE id = :id")
+  suspend fun markUsed(id: String)
+}
+
+@Dao
 interface CatalogDao {
 
   @Upsert
@@ -235,6 +270,45 @@ interface CatalogDao {
 
   @Query("SELECT * FROM customer WHERE name LIKE '%' || :term || '%' OR phone LIKE '%' || :term || '%' ORDER BY name LIMIT 40")
   fun searchCustomers(term: String): Flow<List<CustomerEntity>>
+
+  /**
+   * Takes what was sold off the shelf, for the products the shop counts.
+   *
+   * `pendingUpload` is deliberately left alone: the server does the same subtraction when
+   * the bill reaches it, and a device that pushed its own figure back would take the
+   * quantity off twice. This is the optimistic copy, replaced by the server's on the next
+   * sync.
+   */
+  @Query(
+    "UPDATE item SET stockThousandths = max(0, stockThousandths - :quantityMilli) " +
+      "WHERE id = :id AND stockThousandths IS NOT NULL",
+  )
+  suspend fun reduceStock(id: String, quantityMilli: Long)
+
+  /**
+   * The product with this name, whatever case it was typed in.
+   *
+   * A shop has one "Masu". Typing the name onto a bill instead of picking it from the
+   * list used to create a second one, then a third, until the suggestion dropdown showed
+   * the same product three times at the same price.
+   */
+  @Query("SELECT * FROM item WHERE active = 1 AND name = :name COLLATE NOCASE LIMIT 1")
+  suspend fun itemByName(name: String): ItemEntity?
+
+  /**
+   * The duplicates already on the device, keeping the oldest of each name.
+   *
+   * The oldest is the one bills already point at, so it is the row that has to survive.
+   */
+  @Query(
+    "SELECT id FROM item WHERE id NOT IN (" +
+      "SELECT id FROM item GROUP BY lower(name) HAVING MIN(rowid) = rowid" +
+      ")",
+  )
+  suspend fun duplicateItemIds(): List<String>
+
+  @Query("DELETE FROM item WHERE id IN (:ids)")
+  suspend fun deleteItems(ids: List<String>)
 
   @Query("SELECT * FROM item WHERE barcode = :barcode AND active = 1 LIMIT 1")
   suspend fun itemByBarcode(barcode: String): ItemEntity?

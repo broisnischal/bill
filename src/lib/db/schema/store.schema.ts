@@ -1,7 +1,13 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth.schema";
-import type { BusinessType, StoreRole, TaxpayerType } from "./types";
+import type {
+  BusinessType,
+  StoreDocumentKind,
+  StoreRole,
+  StoreStatus,
+  TaxpayerType,
+} from "./types";
 
 /**
  * A registered business. Everything else in the system hangs off a store, and a
@@ -64,6 +70,19 @@ export const store = sqliteTable(
     /** AES-256-GCM ciphertext. Never written or read in plaintext. See lib/ird/credentials.ts */
     cbmsPasswordEncrypted: text("cbms_password_encrypted"),
 
+    // Review
+    /**
+     * Nothing bills until a person has approved the business.
+     *
+     * The PAN on a bill is a claim about who issued it, and the tax office holds the
+     * taxpayer to it. A number nobody checked is a number somebody else can print.
+     */
+    status: text("status").$type<StoreStatus>().notNull().default("pending"),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+    reviewedById: text("reviewed_by_id").references(() => user.id, { onDelete: "set null" }),
+    /** Why it was refused, in words the shop reads. Cleared when it is approved. */
+    reviewNote: text("review_note"),
+
     createdAt: integer("created_at", { mode: "timestamp" })
       .$defaultFn(() => new Date())
       .notNull(),
@@ -75,6 +94,40 @@ export const store = sqliteTable(
   (table) => [
     uniqueIndex("store_pan_uidx").on(table.pan),
     index("store_owner_idx").on(table.ownerId),
+    index("store_status_idx").on(table.status),
+  ],
+);
+
+/**
+ * A paper a business uploaded for review.
+ *
+ * The file itself is in R2 and only ever reaches a browser through the Worker, so the
+ * bucket stays private: these are somebody's tax documents, not assets. One row per kind
+ * per store, so re-uploading replaces rather than piling up copies a reviewer has to
+ * date-sort.
+ */
+export const storeDocument = sqliteTable(
+  "store_document",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    storeId: text("store_id")
+      .notNull()
+      .references(() => store.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<StoreDocumentKind>().notNull(),
+    /** R2 object key. */
+    key: text("key").notNull(),
+    fileName: text("file_name"),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    uploadedAt: integer("uploaded_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("store_document_kind_uidx").on(table.storeId, table.kind),
+    index("store_document_store_idx").on(table.storeId),
   ],
 );
 
@@ -150,6 +203,19 @@ export const item = sqliteTable(
     barcode: text("barcode"),
     unit: text("unit").notNull().default("pcs"),
     unitPricePaisa: integer("unit_price_paisa").notNull().default(0),
+    /**
+     * What is on the shelf, in thousandths of a unit, or null where the shop does not
+     * count this one. Zero and null are different answers: one says the packet is out,
+     * the other says nobody is keeping track, and a sale must not turn the second into
+     * the first.
+     */
+    stockThousandths: integer("stock_thousandths"),
+    /**
+     * The shop's own labels for grouping what it sells. Free text rather than a fixed
+     * list of categories, because a kirana, a hardware shop and a pharmacy do not sort
+     * their shelves the same way and none of them would recognise our list.
+     */
+    tags: text("tags", { mode: "json" }).$type<string[]>(),
     /** False for VAT-exempt goods listed in Schedule 1 of the VAT Act. */
     vatApplicable: integer("vat_applicable", { mode: "boolean" }).notNull().default(true),
     active: integer("active", { mode: "boolean" }).notNull().default(true),

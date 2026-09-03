@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { fiscalYearFor, toBsString } from "#/lib/nepali/date.ts";
 import { amountInWords, formatPaisa } from "#/lib/nepali/money.ts";
+import { VAT_ENABLED } from "#/lib/tax/vat.ts";
 
 import { computeInvoice } from "./calc";
 import { buildInvoiceDocument } from "./document";
@@ -68,6 +69,11 @@ function fixture() {
     printFooterNote: null,
     bankDetails: "Nabil Bank · A/C 0123456789012",
     cbmsEnabled: true,
+    // Approved: the fixture is a business that is already billing.
+    status: "approved" as const,
+    reviewedAt: new Date("2026-08-01T00:00:00Z"),
+    reviewedById: null,
+    reviewNote: null,
     cbmsUsername: "everest",
     cbmsPasswordEncrypted: null,
     createdAt: issuedAt,
@@ -180,15 +186,18 @@ describe("buildInvoiceDocument", () => {
     const { store, invoice, items } = fixture();
     const { html } = buildInvoiceDocument({ store, invoice, items, format: "a4", copyNumber: 1 });
 
-    expect(html).toContain("TAX INVOICE");
-    expect(html).toContain("कर बीजक");
+    // The wording follows the VAT switch, and the test follows it too: while VAT is off
+    // a shop issues an invoice, not a tax invoice, and printing the Rule 17 wording over
+    // a bill that charges no tax is the mistake this asserts against in both states.
+    expect(html).toContain(VAT_ENABLED ? "TAX INVOICE" : "INVOICE");
+    expect(html).toContain(VAT_ENABLED ? "कर बीजक" : "बीजक");
     expect(html).toContain(store.name);
     expect(html).toContain(store.pan);
     expect(html).toContain(invoice.buyerName);
     expect(html).toContain(invoice.buyerPan);
     expect(html).toContain(invoice.invoiceNumber);
     expect(html).toContain(invoice.fiscalYear);
-    expect(html).toContain("VAT @ 13%");
+    if (VAT_ENABLED) expect(html).toContain("VAT @ 13%");
     expect(html).toContain(formatPaisa(invoice.totalPaisa));
     expect(html).toContain(invoice.amountInWords);
     expect(html).toContain("Original");

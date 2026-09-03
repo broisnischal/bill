@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import np.bill.R
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
 import np.bill.data.repo.SavedPaymentQr
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.PrimaryButton
@@ -89,7 +89,7 @@ fun ShowQrSheet(
       amountPaisa?.let {
         Spacer(Modifier.height(2.dp))
         Text(
-          stringResource(R.string.qr_amount, formatPaisa(it)),
+          stringResource(R.string.qr_amount, formatMoney(it)),
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -155,7 +155,7 @@ private fun MethodRow(qr: SavedPaymentQr, onClick: () -> Unit) {
  * generated with, and a QR tinted by a dark theme is a QR that reads slowly or not at all.
  */
 @Composable
-private fun QrFullScreen(qr: SavedPaymentQr, amountPaisa: Long?, onDismiss: () -> Unit) {
+internal fun QrFullScreen(qr: SavedPaymentQr, amountPaisa: Long?, onDismiss: () -> Unit) {
   Dialog(
     onDismissRequest = onDismiss,
     properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -194,7 +194,7 @@ private fun QrFullScreen(qr: SavedPaymentQr, amountPaisa: Long?, onDismiss: () -
       amountPaisa?.let {
         Spacer(Modifier.height(20.dp))
         Text(
-          "Rs ${formatPaisa(it)}",
+          "Rs ${formatMoney(it)}",
           style = MaterialTheme.typography.displaySmall,
           color = Color.Black,
         )

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Payment brand artwork is looked up by name at runtime, so nothing in the code refers to
+  these files by symbol and the resource shrinker would otherwise strip them out of a
+  release build.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/brand_*" />

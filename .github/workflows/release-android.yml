@@ -1,0 +1,108 @@
+# Builds the till app and publishes it, whenever the release manifest names a version
+# that has not been released yet.
+#
+# The manifest is the trigger on purpose: it is the same file Gradle stamps the APK from
+# and the Worker serves to phones asking whether they are out of date, so a release is
+# exactly "that file changed", not a tag somebody remembered to push.
+name: Release Android
+
+on:
+  push:
+    branches: [master]
+    paths: ["apps/android/release.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.check.outputs.released }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        name: Is this version already out
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(jq -r .versionName apps/android/release.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=android-v$version" >> "$GITHUB_OUTPUT"
+          if gh release view "android-v$version" >/dev/null 2>&1; then
+            echo "android-v$version is already released"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.released == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - if: steps.check.outputs.released == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Write the upload keystore
+        if: steps.check.outputs.released == 'true'
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          # Without this the build falls back to the debug key, and an APK signed with it
+          # can never update a phone carrying a real release. Better to fail the release.
+          if [ -z "$KEYSTORE" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is not set. See the release notes in the README."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build the APK
+        if: steps.check.outputs.released == 'true'
+        working-directory: apps/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew --no-daemon :app:assembleRelease
+          mv app/build/outputs/apk/release/app-release.apk \
+             "bill-${{ steps.check.outputs.version }}.apk"
+
+      - name: Publish the release
+        if: steps.check.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The notes the update screen shows come from the manifest, so the release page
+          # and the phone say the same thing.
+          jq -r .notes apps/android/release.json > "$RUNNER_TEMP/notes.md"
+          if [ ! -s "$RUNNER_TEMP/notes.md" ]; then
+            echo "Bill ${{ steps.check.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+          fi
+          gh release create "${{ steps.check.outputs.tag }}" \
+            --title "Bill for Android ${{ steps.check.outputs.version }}" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            "apps/android/bill-${{ steps.check.outputs.version }}.apk"
+
+  # The APK is only reachable once the Worker is serving the manifest that points at it,
+  # so this runs after the release exists and never before.
+  deploy:
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      # nitro writes the Worker and merges wrangler.jsonc into the config beside it, which
+      # is what `.wrangler/deploy/config.json` points wrangler at.
+      - run: bun run build
+      - run: bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

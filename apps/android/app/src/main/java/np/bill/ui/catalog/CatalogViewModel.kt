@@ -13,12 +13,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import np.bill.core.money.formatQuantity
 import np.bill.core.money.parsePaisa
+import np.bill.core.money.parseQuantityMilli
 import np.bill.data.db.CustomerEntity
 import np.bill.data.db.ItemEntity
+import np.bill.data.db.tagList
 import np.bill.data.repo.CatalogRepository
 import np.bill.data.sync.SyncWorker
 import np.bill.device.Contacts
@@ -29,6 +33,9 @@ data class ItemFormState(
   val name: String = "",
   val price: String = "",
   val unit: String = "pcs",
+  /** Blank means the shop does not count this one, which is not the same as zero. */
+  val stock: String = "",
+  val tags: List<String> = emptyList(),
   val hsCode: String = "",
   val barcode: String = "",
   val vatApplicable: Boolean = true,
@@ -85,6 +92,17 @@ class CatalogViewModel @Inject constructor(
     .flatMapLatest(catalog::searchCustomers)
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /**
+   * Every label already in use, most-used first.
+   *
+   * Offered on the form so a shop picks from what it has rather than typing "grocery",
+   * "Grocery" and "grocry" into three labels that look like one.
+   */
+  val tags = catalog.searchItems("")
+    .map { items -> items.flatMap { it.tagList }.groupingBy { it }.eachCount() }
+    .map { counts -> counts.entries.sortedByDescending { it.value }.map { it.key } }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
   fun searchItems(term: String) { itemQuery.value = term }
   fun searchCustomers(term: String) { customerQuery.value = term }
 
@@ -98,8 +116,10 @@ class CatalogViewModel @Inject constructor(
       ItemFormState(
         id = it.id,
         name = it.name,
-        price = np.bill.core.money.paisaToDecimalString(it.unitPricePaisa),
+        price = np.bill.core.money.paisaToInput(it.unitPricePaisa),
         unit = it.unit,
+        stock = it.stockThousandths?.let(::formatQuantity).orEmpty(),
+        tags = it.tagList,
         hsCode = it.hsCode.orEmpty(),
         barcode = it.barcode.orEmpty(),
         vatApplicable = it.vatApplicable,
@@ -129,6 +149,8 @@ class CatalogViewModel @Inject constructor(
         vatApplicable = form.vatApplicable,
         hsCode = form.hsCode.ifBlank { null },
         barcode = form.barcode.ifBlank { null },
+        stockThousandths = form.stock.ifBlank { null }?.let(::parseQuantityMilli),
+        tags = form.tags,
       )
       SyncWorker.runNow(application)
       _itemForm.value = ItemFormState()

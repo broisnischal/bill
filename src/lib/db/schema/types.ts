@@ -22,6 +22,24 @@ export type BusinessType =
 export type TaxpayerType = "vat" | "pan";
 
 /**
+ * Where a business is in review.
+ *
+ * A shop signs up, uploads its PAN certificate and waits for a person to look at it.
+ * Nothing bills until that has happened, because the PAN printed on a bill is a claim
+ * about who issued it and nobody should be able to make that claim unchecked.
+ */
+export type StoreStatus = "pending" | "approved" | "rejected";
+
+/**
+ * The papers a business is asked for.
+ *
+ * The PAN certificate is compulsory: it is the one document that ties the number printed
+ * on every bill to the person billing. The other two are asked for because a reviewer
+ * often wants them, and refused as a reason to hold anybody up.
+ */
+export type StoreDocumentKind = "pan" | "registration" | "tax_clearance";
+
+/**
  * Document type.
  * - `tax_invoice` (कर बीजक): full VAT invoice, Rule 17 of the VAT Rules 2053.
  * - `abbreviated_tax_invoice` (संक्षिप्त कर बीजक): retail counter sale, Rule 18,

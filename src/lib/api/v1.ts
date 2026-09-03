@@ -127,6 +127,28 @@ export async function requireStore(request: Request): Promise<StoreContext> {
   };
 }
 
+/**
+ * The store, and it has to have been approved.
+ *
+ * Everything that writes a bill goes through here. A business waiting on review can set
+ * itself up — products, buyers, printer — because that is the useful thing to do while
+ * waiting; what it cannot do is put a PAN on a document a tax office will read.
+ */
+export async function requireApprovedStore(request: Request): Promise<StoreContext> {
+  const context = await requireStore(request);
+  if (context.store.status !== "approved") {
+    throw new ApiError(
+      403,
+      context.store.status === "rejected" ? "store_rejected" : "store_pending",
+      context.store.status === "rejected"
+        ? (context.store.reviewNote ??
+            "The business was not approved. Check what was asked for and send it again.")
+        : "The business is still being reviewed. Billing opens as soon as it is approved.",
+    );
+  }
+  return context;
+}
+
 export function requireAdmin(context: StoreContext) {
   if (context.role !== "owner" && context.role !== "manager") {
     throw new ApiError(403, "forbidden", "This needs owner or manager access");

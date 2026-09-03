@@ -1,16 +1,14 @@
 package np.bill.ui.common
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.height
@@ -26,10 +24,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import np.bill.ui.theme.BillIcons
 import np.bill.R
 import np.bill.core.text.Romanizer
 import np.bill.ui.theme.LocalTokens
@@ -51,78 +51,149 @@ fun PickerField(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   searchable: Boolean = false,
+  hint: String? = null,
+  /**
+   * Whether the label floats above the box.
+   *
+   * Off in a tight row, where three controls sharing one line read better with none of
+   * them labelled than with one of them notched and the others not. The sheet still uses
+   * the label as its title, so nothing is lost by hiding it here.
+   */
+  showLabel: Boolean = true,
 ) {
   var open by remember { mutableStateOf(false) }
 
-  Box(modifier) {
-    OutlinedTextField(
-      value = value.orEmpty(),
-      onValueChange = {},
-      label = { Text(label) },
-      readOnly = true,
-      enabled = false,
-      trailingIcon = { Icon(Icons.Filled.ArrowDropDown, contentDescription = null) },
-      colors = if (enabled) {
-        OutlinedTextFieldDefaults.colors(
-          disabledTextColor = MaterialTheme.colorScheme.onSurface,
-          disabledBorderColor = MaterialTheme.colorScheme.outline,
+  Column(modifier) {
+    Box {
+      OutlinedTextField(
+        value = value.orEmpty(),
+        onValueChange = {},
+        label = if (showLabel) {
+          { Text(label) }
+        } else {
+          null
+        },
+        readOnly = true,
+        singleLine = true,
+        enabled = false,
+        shape = RoundedCornerShape(Radius.large),
+        trailingIcon = { Icon(BillIcons.ChevronDown, contentDescription = null) },
+        colors = OutlinedTextFieldDefaults.colors(
+          disabledTextColor = if (enabled) {
+            MaterialTheme.colorScheme.onSurface
+          } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+          },
+          // Filled and borderless like every other field. It was the one outlined control
+          // left on the screen, which made it read as broken rather than as a picker.
+          disabledBorderColor = LocalTokens.current.borderStrong,
+          disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
           disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
           disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      } else {
-        OutlinedTextFieldDefaults.colors()
-      },
-      modifier = Modifier.fillMaxWidth(),
-    )
-    if (enabled) {
-      Box(
-        Modifier
-          .matchParentSize()
-          .clickable { open = true },
+        ),
+        modifier = Modifier.fillMaxWidth(),
       )
+      if (enabled) {
+        // Clipped to the field's own shape, or the press highlight is a square that
+        // overhangs the rounded corners it is meant to be inside.
+        Box(
+          Modifier
+            .matchParentSize()
+            .clip(RoundedCornerShape(Radius.large))
+            .clickable { open = true },
+        )
+      }
+    }
+
+    // The same line every text field reserves for its error or hint, kept empty when
+    // there is nothing to say. Without it a picker beside a field is half that line
+    // taller and sits below it in a centred row, which is the shift that showed up on
+    // the Qty / Unit / Rate row of a bill.
+    Box(Modifier.fillMaxWidth().height(18.dp).padding(start = 14.dp, top = 2.dp)) {
+      hint?.let {
+        Text(
+          it,
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
     }
   }
 
   if (open) {
-    var query by remember { mutableStateOf("") }
-    val shown = remember(query, options) {
-      if (query.isBlank()) options else options.filter { it.contains(query, ignoreCase = true) }
+    ChoiceSheet(
+      title = label,
+      options = options,
+      selected = value,
+      onPick = {
+        onPick(it)
+        open = false
+      },
+      onDismiss = { open = false },
+      searchable = searchable,
+    )
+  }
+}
+
+/**
+ * A picker for a tight row: the value, a chevron, nothing else.
+ *
+ * `PickerField` is a Material outlined field, and its internal padding plus a 48dp
+ * trailing icon leaves about 30dp for the text — which is why "pcs" was arriving clipped
+ * in a 96dp box next to the quantity. This draws the box itself, so the width goes to
+ * the word instead of to the chrome around it.
+ */
+@Composable
+fun CompactPicker(
+  value: String,
+  options: List<String>,
+  onPick: (String) -> Unit,
+  title: String,
+  modifier: Modifier = Modifier,
+) {
+  var open by remember { mutableStateOf(false) }
+  val tokens = LocalTokens.current
+  val shape = RoundedCornerShape(Radius.large)
+
+  Column(modifier) {
+    Row(
+      Modifier
+        .height(np.bill.ui.common.FieldHeight)
+        .clip(shape)
+        .background(MaterialTheme.colorScheme.surfaceContainer)
+        .border(1.dp, tokens.borderStrong, shape)
+        .clickable { open = true }
+        .padding(start = 12.dp, end = 8.dp),
+      verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+      Text(
+        value,
+        style = MaterialTheme.typography.bodyLarge,
+        maxLines = 1,
+        modifier = Modifier.weight(1f),
+      )
+      Icon(
+        BillIcons.ChevronDown,
+        contentDescription = title,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(18.dp),
+      )
     }
 
-    AlertDialog(
-      onDismissRequest = { open = false },
-      title = { Text(label) },
-      confirmButton = {
-        TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) }
+    // The reserved line every field carries, so a row of them stays aligned.
+    Box(Modifier.height(18.dp))
+  }
+
+  if (open) {
+    ChoiceSheet(
+      title = title,
+      options = options,
+      selected = value,
+      onPick = {
+        onPick(it)
+        open = false
       },
-      text = {
-        Column {
-          if (searchable) {
-            OutlinedTextField(
-              value = query,
-              onValueChange = { query = it },
-              label = { Text(stringResource(R.string.search)) },
-              singleLine = true,
-              modifier = Modifier.fillMaxWidth(),
-            )
-          }
-          LazyColumn(Modifier.heightIn(max = 360.dp)) {
-            items(shown, key = { it }) { option ->
-              Text(
-                option,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .clickable {
-                    onPick(option)
-                    open = false
-                  }
-                  .padding(vertical = 14.dp, horizontal = 4.dp),
-              )
-            }
-          }
-        }
-      },
+      onDismiss = { open = false },
     )
   }
 }

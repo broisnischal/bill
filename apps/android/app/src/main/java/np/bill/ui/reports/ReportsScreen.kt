@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import np.bill.R
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.Hairline
 import np.bill.ui.common.Panel
@@ -73,7 +73,7 @@ fun ReportsScreen(
         Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.Bottom) {
           Text("Rs ", style = MaterialTheme.typography.titleLarge)
-          Text(formatPaisa(state.salesPaisa), style = MaterialTheme.typography.displayMedium)
+          Text(formatMoney(state.salesPaisa), style = MaterialTheme.typography.displayMedium)
         }
       }
       Hairline()
@@ -85,7 +85,7 @@ fun ReportsScreen(
         )
         Metric(
           label = stringResource(R.string.average_bill),
-          value = "Rs ${formatPaisa(state.averagePaisa)}",
+          value = "Rs ${formatMoney(state.averagePaisa)}",
           modifier = Modifier.weight(1f),
         )
       }
@@ -93,12 +93,12 @@ fun ReportsScreen(
       Row(Modifier.fillMaxWidth()) {
         Metric(
           label = stringResource(R.string.taxable_sales),
-          value = "Rs ${formatPaisa(state.taxablePaisa)}",
+          value = "Rs ${formatMoney(state.taxablePaisa)}",
           modifier = Modifier.weight(1f),
         )
         Metric(
           label = stringResource(R.string.vat_collected),
-          value = "Rs ${formatPaisa(state.vatPaisa)}",
+          value = "Rs ${formatMoney(state.vatPaisa)}",
           modifier = Modifier.weight(1f),
         )
       }
@@ -106,7 +106,7 @@ fun ReportsScreen(
         Hairline()
         Metric(
           label = stringResource(R.string.exempt_sales),
-          value = "Rs ${formatPaisa(state.exemptPaisa)}",
+          value = "Rs ${formatMoney(state.exemptPaisa)}",
           modifier = Modifier.fillMaxWidth(),
         )
       }
@@ -149,7 +149,7 @@ fun ReportsScreen(
               maxLines = 1,
             )
             Text(
-              "Rs ${formatPaisa(product.totalPaisa)}",
+              "Rs ${formatMoney(product.totalPaisa)}",
               style = MaterialTheme.typography.titleMedium,
             )
           }

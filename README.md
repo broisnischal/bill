@@ -72,6 +72,56 @@ implementations cannot drift without a test going red.
 
 **Two modes.** A business makes bills. A customer scans the QR printed on one and keeps it.
 
+## Releases
+
+Anything that reaches a shop is described in a changeset first:
+
+```sh
+bun run change        # what changed, and how big a bump it is
+```
+
+A push to master opens a "Version packages" pull request. Merging that one is the
+release: versions are bumped, changelogs written, `apps/android/release.json` rewritten,
+and the workflows build the APK, publish it to GitHub Releases and deploy the Worker.
+
+`apps/android/release.json` is the single description of a release. Gradle stamps the APK
+from it and the Worker serves it at `GET /api/v1/app/android`, so the version a phone
+reports and the version it is measured against are one file rather than two places to
+keep in step.
+
+**Soft and hard.** For `@bill/android` the size of the bump is the update policy. A patch
+or a minor raises `versionCode`, and the app offers the update in a sheet the shopkeeper
+can push away; it stops asking about that version once they do. A major raises
+`minimumVersionCode` too, and every install below it is held on a screen with no way
+past. That is for a change the server will not accept old bills from, and it is not free:
+a shop held there cannot sell. The field can also be raised by hand for the release that
+fixes something older builds get quietly wrong.
+
+**What the phone does.** It asks on launch, at most every six hours, and on every launch
+while it is being held. The answer is stored, so a phone with no signal keeps what it was
+last told rather than assuming all is well. Updating downloads the APK from the release
+and hands it to the system installer. Android refuses a package signed with a different
+key than the one already installed, and that check is what makes this safe rather than a
+hash of our own.
+
+**Before the first public release** the upload keystore has to exist, because Android
+will never replace a build signed with one key by a build signed with another:
+
+```sh
+keytool -genkeypair -v -keystore upload.jks -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias upload
+base64 -w0 upload.jks     # this is the ANDROID_KEYSTORE_BASE64 secret
+```
+
+The build reads four repository secrets: `ANDROID_KEYSTORE_BASE64`,
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Deploying
+the Worker in the same run needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Keep
+the keystore where it cannot be lost: without it every shop has to uninstall and install
+again by hand.
+
+A local `assembleRelease` with none of that set falls back to the debug key, which is
+fine for putting a minified build on a phone and can never update anybody.
+
 ## What makes a bill compliant here
 
 **Numbering.** Each store gets one series per fiscal year and document type. The next

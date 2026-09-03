@@ -27,7 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import np.bill.R
 import np.bill.ui.common.Hairline
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
 import np.bill.core.nepali.BsDate
 import np.bill.ui.common.EmptyState
 
@@ -51,7 +51,7 @@ fun WalletScreen(
         Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.Bottom) {
           Text("Rs ", style = MaterialTheme.typography.titleLarge)
-          Text(formatPaisa(state.spentThisMonth), style = MaterialTheme.typography.displaySmall)
+          Text(formatMoney(state.spentThisMonth), style = MaterialTheme.typography.displaySmall)
         }
       }
     }
@@ -82,7 +82,7 @@ fun WalletScreen(
               )
             }
             Text(
-              "Rs ${formatPaisa(bill.totalPaisa)}",
+              "Rs ${formatMoney(bill.totalPaisa)}",
               style = MaterialTheme.typography.titleMedium,
               textDecoration = if (bill.status == "cancelled") TextDecoration.LineThrough else null,
             )

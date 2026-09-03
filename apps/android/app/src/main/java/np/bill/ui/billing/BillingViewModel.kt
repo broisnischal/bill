@@ -18,6 +18,7 @@ import androidx.compose.runtime.Immutable
 import np.bill.core.invoice.InvoiceTotals
 import np.bill.core.invoice.LineInput
 import np.bill.core.invoice.computeInvoice
+import np.bill.core.money.formatQuantity
 import np.bill.core.money.parsePaisa
 import np.bill.core.money.parseQuantityMilli
 import np.bill.core.nepali.BsCalendar
@@ -37,6 +38,8 @@ data class HomeState(
   val todayCount: Int = 0,
   /** The list after filters, which is what the screen draws. */
   val visible: List<BillEntity> = emptyList(),
+  /** The newest few, whatever the Bills tab is filtered to. Home shows these. */
+  val recent: List<BillEntity> = emptyList(),
   val pendingSync: Int = 0,
   val numbersLeft: Int = 0,
   val printerName: String? = null,
@@ -47,6 +50,15 @@ data class HomeState(
 ) {
   val outOfNumbers: Boolean get() = numbersLeft == 0
 }
+
+/** A buyer this counter has billed before, as much of them as a bill records. */
+@Immutable
+data class RecentBuyer(
+  val customerId: String?,
+  val name: String,
+  val phone: String?,
+  val pan: String?,
+)
 
 @Immutable
 data class BillFilters(
@@ -125,7 +137,11 @@ data class NewBillState(
 ) {
   val onCredit: Boolean get() = settlement == Settlement.OWED
 
-  val canSave: Boolean get() = totals.totalPaisa > 0 && !saving
+  /**
+   * A bill needs a buyer. It is on the paper, it is what the shop searches its own
+   * history by, and "Cash customer" on every second bill is the same as no record.
+   */
+  val canSave: Boolean get() = totals.totalPaisa > 0 && buyerName.isNotBlank() && !saving
 
   /** What is still owed once this bill is written, in paisa. */
   val owedPaisa: Long
@@ -155,6 +171,9 @@ class BillingViewModel @Inject constructor(
   private val billing: BillingRepository,
   private val catalog: CatalogRepository,
   private val profiles: np.bill.data.repo.ProfileRepository,
+  private val paymentQr: np.bill.data.repo.PaymentQrRepository,
+  private val templateRepo: np.bill.data.repo.TemplateRepository,
+  private val sync: np.bill.data.repo.SyncRepository,
   private val session: SessionStore,
   private val application: Application,
 ) : ViewModel() {
@@ -192,6 +211,7 @@ class BillingViewModel @Inject constructor(
       todayPaisa = today.sumOf { it.totalPaisa },
       todayCount = today.size,
       visible = visible,
+      recent = recent.take(5),
       pendingSync = pending,
       numbersLeft = numbers,
       visiblePaisa = visible.filter { it.status == "active" }.sumOf { it.totalPaisa },
@@ -209,6 +229,9 @@ class BillingViewModel @Inject constructor(
   val newBill = _newBill.asStateFlow()
 
   private var nextLineId = 2L
+
+  /** One number request at a time. The banner recomposes more often than it should. */
+  private var fetching = false
 
   init {
     viewModelScope.launch {
@@ -278,7 +301,7 @@ class BillingViewModel @Inject constructor(
   fun pickItem(lineId: Long, item: ItemEntity) = updateLine(lineId) {
     it.copy(
       description = item.name,
-      rate = np.bill.core.money.paisaToDecimalString(item.unitPricePaisa),
+      rate = np.bill.core.money.paisaToInput(item.unitPricePaisa),
       unit = item.unit,
       vatApplicable = item.vatApplicable,
       itemId = item.id,
@@ -398,6 +421,121 @@ class BillingViewModel @Inject constructor(
     val id = nextLineId++
     _newBill.update { it.copy(lines = it.lines + DraftLine(id = id)) }
     return id
+  }
+
+  /**
+   * The codes the shop has saved. Picking a wallet at the counter shows the customer the
+   * code to scan, which is the whole reason the method is chosen before the bill is
+   * saved rather than after.
+   */
+  val paymentQrs = paymentQr.observe()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  // -- templates and regulars --------------------------------------------------------
+
+  /** The shop's baskets, most-used first. Drawn as one row of taps on the home screen. */
+  val templates = templateRepo.observe()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  /**
+   * Who this counter has billed lately.
+   *
+   * Taken from the bills themselves rather than from the customer list, so a walk-in
+   * typed onto one bill is one tap on the next. Keyed by customer where there is one and
+   * by name where there is not, which is what stops the same regular appearing twice.
+   */
+  val recentBuyers: kotlinx.coroutines.flow.StateFlow<List<RecentBuyer>> = billing.recent()
+    .map { bills ->
+      bills
+        .filter { it.status == "active" && it.buyerName.isNotBlank() }
+        // Keyed on the name alone. Keying on the customer id as well listed the same
+        // regular twice: once from the bill that picked them out of the list, and once
+        // from the bill where the name was typed by hand.
+        .groupBy { it.buyerName.trim().lowercase() }
+        .values
+        .map { group -> group.firstOrNull { it.customerId != null } ?: group.first() }
+        .sortedByDescending { it.issuedAt }
+        .take(8)
+        .map { RecentBuyer(it.customerId, it.buyerName, it.buyerPhone, it.buyerPan) }
+    }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  /**
+   * Fills the draft from a template.
+   *
+   * Counts the use as it goes, so the front of the row on the home screen is whatever
+   * the shop actually reaches for rather than whatever was made first.
+   */
+  fun startFromTemplate(templateId: String) {
+    viewModelScope.launch {
+      val template = templateRepo.byId(templateId) ?: return@launch
+      templateRepo.markUsed(templateId)
+
+      var next = 1L
+      val lines = template.lines.sortedBy { it.lineNo }.map { line ->
+        DraftLine(
+          id = next++,
+          description = line.description,
+          quantity = formatQuantity(line.quantityMilli),
+          rate = np.bill.core.money.paisaToInput(line.unitPricePaisa),
+          unit = line.unit,
+          vatApplicable = line.vatApplicable,
+          itemId = line.itemId,
+        )
+      }
+      nextLineId = next
+      _newBill.update { it.copy(lines = lines.ifEmpty { listOf(DraftLine(id = 1)) }).recalculate() }
+    }
+  }
+
+  /**
+   * Why the counter is empty.
+   *
+   * The banner used to blame the connection for every empty counter, which sends a shop
+   * that is perfectly online to go and look at its router. A till that has just been
+   * approved has no numbers yet and only needs one sync; one that cannot reach the
+   * office needs to hear that instead.
+   */
+  enum class NumbersHint { FETCHING, OFFLINE, REFUSED }
+
+  private val _numbersHint = MutableStateFlow(NumbersHint.FETCHING)
+  val numbersHint = _numbersHint.asStateFlow()
+
+  /**
+   * Asks the office for numbers now.
+   *
+   * Called by the banner that says the counter is empty, so the shop is not left waiting
+   * on the periodic sync while looking at a message about it. Guarded against firing
+   * repeatedly while one is already in flight.
+   */
+  fun fetchNumbers() {
+    if (fetching) return
+    fetching = true
+    viewModelScope.launch {
+      _numbersHint.value = NumbersHint.FETCHING
+      val outcome = sync.sync()
+      _numbersHint.value = when {
+        outcome.offline -> NumbersHint.OFFLINE
+        outcome.error != null -> NumbersHint.REFUSED
+        else -> NumbersHint.FETCHING
+      }
+      fetching = false
+    }
+  }
+
+  fun deleteTemplate(id: String) {
+    viewModelScope.launch { templateRepo.delete(id) }
+  }
+
+  /** A regular, straight onto the bill. Everything the last bill knew about them. */
+  fun useRecentBuyer(buyer: RecentBuyer) = _newBill.update {
+    it.copy(
+      customerId = buyer.customerId,
+      buyerName = buyer.name,
+      buyerPhone = buyer.phone.orEmpty(),
+      buyerPan = buyer.pan.orEmpty(),
+      error = null,
+    )
   }
 
   fun itemSuggestions(term: String) = catalog.searchItems(term)

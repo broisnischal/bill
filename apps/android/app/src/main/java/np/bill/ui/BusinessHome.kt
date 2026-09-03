@@ -2,8 +2,6 @@ package np.bill.ui
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,12 +44,14 @@ import np.bill.ui.theme.Radius
 @Composable
 fun BusinessHome(
   onNewBill: (itemIds: List<String>, customerId: String?) -> Unit,
+  onQuickBill: (templateId: String) -> Unit,
   onOpenBill: (String) -> Unit,
   onSwitchMode: () -> Unit,
   onSignedOut: () -> Unit,
   viewModel: BillingViewModel = hiltViewModel(),
 ) {
   val state by viewModel.home.collectAsStateWithLifecycle()
+  val templates by viewModel.templates.collectAsStateWithLifecycle()
   var selected by rememberSaveable { mutableStateOf(Tabs.home.route) }
   var addProduct by remember { mutableStateOf(false) }
   var addCustomer by remember { mutableStateOf(false) }
@@ -121,15 +121,13 @@ fun BusinessHome(
     printerName = state.printerName,
     pendingSync = state.pendingSync,
   ) { modifier ->
-    // A short crossfade between tabs. Swapping instantly on a dark background reads as a
-    // flash, because the two screens rarely have content in the same places.
-    Crossfade(
-      targetState = selected to morePage,
-      animationSpec = tween(140),
-      label = "tab",
-      // Named apart from the state they mirror: the callbacks below still assign to the
-      // outer values, and shadowing them here would make those assignments illegal.
-    ) { (tab, page) ->
+    // No transition between tabs. A crossfade of two whole screens reads as a flash,
+    // because the two rarely have content in the same places, and it puts a frame of
+    // half-drawn page under a thumb that is already moving. Tabs are meant to feel like
+    // switching a light on.
+    val tab = selected
+    val page = morePage
+
     when (tab) {
       Tabs.home.route -> HomeScreen(
         miti = state.miti,
@@ -137,15 +135,16 @@ fun BusinessHome(
         todayCount = state.todayCount,
         duePaisa = state.duePaisa,
         pendingSync = state.pendingSync,
+        recent = state.recent,
+        templates = templates,
         onNewBill = { onNewBill(emptyList(), null) },
-        onAddProduct = {
-          selected = Tabs.products.route
-          addProduct = true
-        },
-        onAddCustomer = {
-          selected = Tabs.customers.route
-          addCustomer = true
-        },
+        onQuickBill = onQuickBill,
+        onDeleteTemplate = viewModel::deleteTemplate,
+        onOpenBill = onOpenBill,
+        // Opened in place. Going to the Products tab to add one left the person on a
+        // list they did not ask for once they were done.
+        onAddProduct = { addProduct = true },
+        onAddCustomer = { addCustomer = true },
         onSettings = {
           selected = Tabs.more.route
           morePage = MorePage.PREFERENCES
@@ -159,13 +158,13 @@ fun BusinessHome(
         modifier = modifier,
       )
       Tabs.products.route -> ItemsScreen(
-        addRequested = addProduct,
+        addRequested = addProduct && selected == Tabs.products.route,
         onAddHandled = { addProduct = false },
         onBillWithItems = { itemIds -> onNewBill(itemIds, null) },
         modifier = modifier,
       )
       Tabs.customers.route -> CustomersScreen(
-        addRequested = addCustomer,
+        addRequested = addCustomer && selected == Tabs.customers.route,
         onAddHandled = { addCustomer = false },
         onBillFor = { customerId -> onNewBill(emptyList(), customerId) },
         modifier = modifier,
@@ -205,6 +204,26 @@ fun BusinessHome(
         viewModel = viewModel,
       )
     }
+
+    // Both forms are hoisted to here so the home screen can open one without changing
+    // tab. The catalogue view model is the tab host's, so a product added from home is
+    // in the list behind it the moment the sheet closes.
+    val catalog: np.bill.ui.catalog.CatalogViewModel = hiltViewModel()
+
+    if (addProduct && selected == Tabs.home.route) {
+      androidx.compose.runtime.LaunchedEffect(Unit) { catalog.editItem(null) }
+      np.bill.ui.catalog.ItemSheet(
+        viewModel = catalog,
+        onDismiss = { addProduct = false },
+      )
+    }
+
+    if (addCustomer && selected == Tabs.home.route) {
+      androidx.compose.runtime.LaunchedEffect(Unit) { catalog.editCustomer(null) }
+      np.bill.ui.catalog.CustomerSheet(
+        viewModel = catalog,
+        onDismiss = { addCustomer = false },
+      )
     }
   }
 }

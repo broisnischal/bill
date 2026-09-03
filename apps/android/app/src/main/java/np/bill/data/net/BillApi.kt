@@ -3,6 +3,7 @@ package np.bill.data.net
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -28,6 +29,13 @@ interface BillApi {
   @GET("api/v1/dev/otp")
   suspend fun devOtp(@Query("phone") phone: String): Response<DevOtpResponse>
 
+  /**
+   * What the newest Android build is. Needs no session: an install too old to be allowed
+   * to bill still has to be able to find out that it is.
+   */
+  @GET("api/v1/app/android")
+  suspend fun appRelease(): Response<AppReleaseResponse>
+
   @GET("api/v1/bootstrap")
   suspend fun bootstrap(): Response<BootstrapResponse>
 
@@ -36,6 +44,22 @@ interface BillApi {
 
   @PATCH("api/v1/store")
   suspend fun updateStore(@Body body: StoreSettingsRequest): Response<RegisterStoreResponse>
+
+  /**
+   * Uploads one paper for review. The body is the file itself: the app has the bytes and
+   * knows the type, and wrapping them in a multipart envelope for the Worker to unwrap
+   * again is work for nothing.
+   */
+  @POST("api/v1/store/documents")
+  suspend fun uploadStoreDocument(
+    @Query("kind") kind: String,
+    @Query("name") fileName: String?,
+    @Header("Content-Type") contentType: String,
+    @Body body: okhttp3.RequestBody,
+  ): Response<StoreDocumentResponse>
+
+  @GET("api/v1/store/documents")
+  suspend fun storeDocuments(): Response<StoreDocumentsResponse>
 
   @POST("api/v1/devices")
   suspend fun registerDevice(@Body body: RegisterDeviceRequest): Response<RegisterDeviceResponse>

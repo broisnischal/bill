@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import np.bill.R
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
 import np.bill.core.money.parsePaisa
 import np.bill.ui.theme.LocalTokens
 import np.bill.ui.theme.Radius
@@ -74,7 +74,7 @@ fun CalculatorSheet(
         )
         Spacer(Modifier.height(4.dp))
         Text(
-          result?.let { formatPaisa(it) } ?: "—",
+          result?.let { formatMoney(it) } ?: "—",
           style = MaterialTheme.typography.displaySmall,
         )
       }
@@ -129,7 +129,7 @@ fun CalculatorSheet(
         PrimaryButton(
           text = stringResource(R.string.use_amount),
           onClick = {
-            result?.let { onResult(np.bill.core.money.paisaToDecimalString(it)) }
+            result?.let { onResult(np.bill.core.money.paisaToInput(it)) }
             onDismiss()
           },
           enabled = result != null,

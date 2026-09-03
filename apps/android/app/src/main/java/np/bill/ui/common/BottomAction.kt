@@ -2,7 +2,6 @@ package np.bill.ui.common
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,15 +26,10 @@ fun BottomAction(
   loading: Boolean = false,
   secondary: (@Composable () -> Unit)? = null,
 ) {
-  Surface(
-    modifier.fillMaxWidth(),
-    color = MaterialTheme.colorScheme.surfaceContainerLow,
-  ) {
-    Column(
-      Modifier
-        .navigationBarsPadding()
-        .padding(horizontal = 16.dp, vertical = 12.dp),
-    ) {
+  // Transparent: the tabs below it already float over the page, and a filled bar here
+  // put a second horizon across the bottom of every list.
+  Surface(modifier.fillMaxWidth(), color = androidx.compose.ui.graphics.Color.Transparent) {
+    Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
       secondary?.invoke()
       PrimaryButton(text = text, onClick = onClick, enabled = enabled, loading = loading)
     }

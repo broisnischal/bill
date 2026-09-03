@@ -6,6 +6,7 @@ import type {
 import type { PrintFormat } from "#/lib/db/schema/types.ts";
 import { formatBsLong, toAdDateString, toNptTimeString } from "#/lib/nepali/date.ts";
 import { formatPaisa, formatQuantity } from "#/lib/nepali/money.ts";
+import { issuesTaxInvoice } from "#/lib/tax/vat.ts";
 
 /**
  * The printed bill.
@@ -45,6 +46,22 @@ const DOCUMENT_TITLES: Record<Invoice["invoiceType"], { en: string; np: string }
   credit_note: { en: "CREDIT NOTE", np: "क्रेडिट नोट" },
 };
 
+/**
+ * A shop that is not registered for VAT does not issue a *tax* invoice.
+ *
+ * "कर बीजक" is the VAT document Rule 17 describes, and printing it over a PAN-only
+ * shop's bill claims a registration they do not have. They issue a plain invoice —
+ * same series, same numbering, same immutability, no tax in the words or the totals.
+ */
+function documentTitle(invoice: Invoice, store: Store) {
+  const title = DOCUMENT_TITLES[invoice.invoiceType];
+  if (issuesTaxInvoice(store) || invoice.invoiceType === "credit_note") return title;
+  return {
+    en: title.en.replace("TAX INVOICE", "INVOICE"),
+    np: title.np.replace("कर बीजक", "बीजक"),
+  };
+}
+
 const PAYMENT_LABELS: Record<Invoice["paymentMethod"], string> = {
   cash: "Cash",
   credit: "Credit",
@@ -77,7 +94,7 @@ function copyMarker(copyNumber: number, copyLabel?: string) {
 /* ------------------------------------------------------------------ A4 ------ */
 
 function a4Body({ store, invoice, items, copyNumber, copyLabel }: InvoiceDocumentInput) {
-  const title = DOCUMENT_TITLES[invoice.invoiceType];
+  const title = documentTitle(invoice, store);
   const vatRate = (invoice.vatRateBp / 100).toFixed(invoice.vatRateBp % 100 === 0 ? 0 : 2);
   const isCredit = invoice.invoiceType === "credit_note";
 
@@ -253,7 +270,7 @@ body { margin: 0; }
 /* -------------------------------------------------------------- thermal ------ */
 
 function thermalBody({ store, invoice, items, copyNumber, copyLabel }: InvoiceDocumentInput) {
-  const title = DOCUMENT_TITLES[invoice.invoiceType];
+  const title = documentTitle(invoice, store);
   const vatRate = (invoice.vatRateBp / 100).toFixed(invoice.vatRateBp % 100 === 0 ? 0 : 2);
 
   const rows = items
@@ -348,8 +365,8 @@ export interface InvoiceDocument {
 }
 
 export function buildInvoiceDocument(input: InvoiceDocumentInput): InvoiceDocument {
-  const { invoice, format } = input;
-  const title = `${DOCUMENT_TITLES[invoice.invoiceType].en} ${invoice.invoiceNumber}`;
+  const { invoice, format, store } = input;
+  const title = `${documentTitle(invoice, store).en} ${invoice.invoiceNumber}`;
 
   if (format === "thermal80") {
     return {

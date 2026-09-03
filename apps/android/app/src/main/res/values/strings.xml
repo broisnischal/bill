@@ -301,4 +301,115 @@
   <string name="qr_number_title">%1$s number</string>
   <string name="qr_number_label">Mobile or merchant ID</string>
   <string name="qr_number_hint">A code drawn from a number carries the number and nothing else. Some apps open straight into a payment; others just read it back as text. Scanning your own code avoids the guess.</string>
+
+    <string name="required">Required</string>
+
+    <string name="takings_today">Takings today</string>
+    <string name="recent_bills">Recent bills</string>
+    <string name="see_all">See all</string>
+
+    <string name="pick_date">Pick a date</string>
+
+    <string name="nav_customers_tab">Buyers</string>
+
+    <string name="taxpayer_pan_note">Bills carry your PAN and no tax. This is what most shops need.</string>
+    <string name="taxpayer_vat_note">Bills charge 13% VAT and print as a tax invoice. Only turn this on if the IRD has registered this PAN for VAT.</string>
+
+    <string name="sign_in_offline">No connection. Signing in needs the internet for one moment — the code comes by SMS.</string>
+    <string name="otp_offline">No connection. The code cannot be checked without the internet.</string>
+
+    <string name="step_name_title">What is the shop called?</string>
+    <string name="step_name_detail">This prints at the top of every bill you give out.</string>
+    <string name="step_pan_title">Your PAN</string>
+    <string name="step_pan_detail">The number on your certificate, and the date it was issued. Both go on the bill.</string>
+    <string name="step_place_title">Where is the shop?</string>
+    <string name="step_place_detail">The address a customer would find you at.</string>
+    <string name="continue_label">Continue</string>
+    <string name="back">Back</string>
+
+    <string name="review_title">We are checking your papers</string>
+    <string name="review_rejected_title">Something needs fixing</string>
+    <string name="review_waiting">Someone reads your PAN certificate before the shop can print that number on a bill. We will text you the moment it is done, usually the same day.</string>
+    <string name="review_needs_pan">Send a photo of your PAN certificate and the check can start. Nothing can be approved without it.</string>
+    <string name="review_pan">PAN %1$s</string>
+    <string name="review_papers">Your papers</string>
+    <string name="review_refresh">Check again</string>
+    <string name="doc_pan">PAN certificate</string>
+    <string name="doc_registration">Registration certificate</string>
+    <string name="doc_tax_clearance">Tax clearance</string>
+    <string name="doc_required">Required. A photo of the page is enough.</string>
+    <string name="doc_optional">Optional, but it speeds the check up.</string>
+    <string name="doc_upload">Upload</string>
+    <string name="doc_replace">Replace</string>
+
+    <string name="mode_subtitle">You can change this later in settings.</string>
+
+    <string name="review_incomplete_title">One paper to go</string>
+    <string name="review_send_pan">Send PAN certificate</string>
+    <string name="review_checking">Checking…</string>
+    <string name="stage_submitted">Submitted</string>
+    <string name="stage_review">Under review</string>
+    <string name="stage_approved">Approved</string>
+
+    <string name="numbers_fetching">Getting bill numbers from the office. One moment.</string>
+
+    <string name="numbers_refused">The office has not sent bill numbers yet. It usually means the business is still being reviewed.</string>
+
+    <!-- Bill templates -->
+    <string name="template_empty">Nothing on this bill to save.</string>
+
+    <string name="quick_bill">Quick bill</string>
+    <string name="quick_bill_empty">Make a bill, then save it as a template. It shows up here and starts the next one in a tap.</string>
+    <string name="template_save">Save as template</string>
+    <string name="template_name">Template name</string>
+    <string name="template_name_hint">What the shop calls this basket. Masu, groceries, gas.</string>
+    <string name="template_saved">Saved. It is on the home screen now.</string>
+    <string name="template_remove_title">Remove %1$s?</string>
+    <string name="template_remove_body">The bills made from it are untouched. Only the shortcut goes.</string>
+
+    <!-- Products -->
+    <string name="in_stock">In stock</string>
+    <string name="in_stock_hint">Leave blank if you do not count this one</string>
+    <string name="labels">Labels</string>
+    <string name="new_label">New label</string>
+    <string name="more_details">More details</string>
+    <string name="stock_left">%1$s %2$s left</string>
+    <string name="stock_out">Out of stock</string>
+
+    <!-- Cancelling a bill -->
+    <string name="cancel_bill_title">Cancel %1$s?</string>
+    <string name="cancel_bill_body">The bill stays in the register and in the return, marked cancelled. Use a credit note instead if goods came back or the amount changed.</string>
+    <string name="cancel_reason_required">Reason (required)</string>
+    <string name="cancel_reason_pan">Wrong buyer PAN</string>
+    <string name="cancel_reason_amount">Wrong amount</string>
+    <string name="cancel_reason_duplicate">Duplicate bill</string>
+    <string name="cancel_reason_no_sale">Sale did not happen</string>
+    <string name="cancel_reason_other">Something else</string>
+    <string name="cancel_reason_hint">An auditor reads this. Say what was wrong.</string>
+    <string name="cancel_bill_confirm">Cancel bill</string>
+    <string name="cancel_keep">Keep bill</string>
+
+    <!-- Updates -->
+    <string name="about">About</string>
+    <string name="app_version">Version %1$s (%2$d)</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_newest">This is the newest version.</string>
+    <string name="update_available">A newer Bill is out</string>
+    <string name="update_required">Update to keep billing</string>
+    <string name="update_version_line">Version %1$s. This phone has %2$s.</string>
+    <string name="update_optional_body">Take it when the counter is quiet. Nothing saved on this phone is lost.</string>
+    <string name="update_required_body">This version can no longer file bills with the office, so a bill written on it would be refused. Updating takes a minute and nothing saved on this phone is lost.</string>
+    <string name="update_now">Update now</string>
+    <string name="update_later">Not now</string>
+    <string name="update_downloading">Downloading %1$d%%</string>
+    <string name="update_permission">Android asks once before an app may install another. Allow it, then tap Update again.</string>
+    <string name="update_failed">The download did not finish. The browser has been sent to the file instead.</string>
+    <plurals name="bills_count">
+        <item quantity="one">%1$d bill</item>
+        <item quantity="other">%1$d bills</item>
+    </plurals>
+    <plurals name="line_count">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
 </resources>

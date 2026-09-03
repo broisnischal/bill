@@ -32,6 +32,15 @@ export const env = createEnv({
       .default("false")
       .transform((value) => value === "true"),
 
+    /**
+     * Who may review businesses, as mobile numbers in E.164, comma separated.
+     *
+     * A list rather than a role column because there are two of us and both sign in with
+     * a phone. It is a var and not a secret: knowing who reviews grants nothing, and
+     * seeing it in version control is how a deployment stops silently having no reviewer.
+     */
+    ADMIN_PHONES: z.string().default(""),
+
     // OAuth2 providers, optional, update as needed
     GITHUB_CLIENT_ID: z.string().optional(),
     GITHUB_CLIENT_SECRET: z.string().optional(),

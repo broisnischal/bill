@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -32,6 +31,8 @@ import np.bill.R
 import np.bill.data.repo.PaymentQrMethod
 import np.bill.scan.CodeScanner
 import np.bill.scan.ScanTarget
+import np.bill.ui.common.Field
+import np.bill.ui.common.FormSheet
 import np.bill.ui.common.PrimaryButton
 import np.bill.ui.common.SecondaryButton
 import np.bill.ui.theme.Radius
@@ -122,35 +123,29 @@ fun NumberQrDialog(
 ) {
   var value by remember { mutableStateOf("") }
 
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text(stringResource(R.string.qr_number_title, stringResource(method.labelRes()))) },
-    text = {
-      Column {
-        OutlinedTextField(
-          value = value,
-          onValueChange = { value = it },
-          singleLine = true,
-          label = { Text(stringResource(R.string.qr_number_label)) },
-          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-          modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-          stringResource(R.string.qr_number_hint),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
+  FormSheet(
+    title = stringResource(R.string.qr_number_title, stringResource(method.labelRes())),
+    onDismiss = onDismiss,
+    heightFraction = 0.5f,
+    action = {
+      PrimaryButton(
+        text = stringResource(R.string.save),
+        onClick = { onConfirm(value.trim()) },
+        enabled = value.trim().length >= 3,
+      )
     },
-    confirmButton = {
-      TextButton(
-        onClick = { onConfirm(value) },
-        enabled = value.isNotBlank(),
-      ) { Text(stringResource(R.string.save)) }
-    },
-    dismissButton = {
-      TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-    },
-  )
+  ) {
+    Field(
+      value = value,
+      onValueChange = { value = it },
+      label = stringResource(R.string.qr_number_label),
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+    )
+    Text(
+      stringResource(R.string.qr_number_hint),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
 }
+

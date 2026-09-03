@@ -1,33 +1,46 @@
 package np.bill.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import np.bill.ui.theme.BillIcons
 import np.bill.R
 import np.bill.ui.common.StatusIcons
+import np.bill.ui.theme.Gutter
+import np.bill.ui.theme.LocalTokens
+import np.bill.ui.theme.Radius
 
 /**
  * The frame every day-to-day screen sits in.
@@ -36,17 +49,22 @@ import np.bill.ui.common.StatusIcons
  * to, and change a setting — are one tap apart rather than buried in a drawer. The top
  * bar carries only what they glance at mid-sale: whether the printer is there and whether
  * the office has today's bills.
+ *
+ * Two things make it look like a phone app rather than a desktop tool ported onto one.
+ * The head of the screen fades out of sage, so the first thing under the thumb has colour
+ * behind it. And the tabs float as pills over the page instead of sitting in a bar bolted
+ * to the bottom edge, which is what stops five equal grey icons reading as a toolbar.
  */
 object Tabs {
-  val home = ShellTab("tab/home", R.string.nav_home, Icons.Filled.Home)
-  val bills = ShellTab("tab/bills", R.string.nav_bills, Icons.AutoMirrored.Filled.ReceiptLong)
-  val products = ShellTab("tab/products", R.string.nav_products, Icons.Filled.Inventory2)
-  val customers = ShellTab("tab/customers", R.string.nav_customers, Icons.Filled.Groups)
-  val more = ShellTab("tab/more", R.string.nav_more, Icons.Filled.Tune)
+  val home = ShellTab("tab/home", R.string.nav_home, BillIcons.House)
+  val bills = ShellTab("tab/bills", R.string.nav_bills, BillIcons.ReceiptText)
+  val products = ShellTab("tab/products", R.string.nav_products, BillIcons.Package)
+  val customers = ShellTab("tab/customers", R.string.nav_customers_tab, BillIcons.Users)
+  val more = ShellTab("tab/more", R.string.nav_more, BillIcons.Settings)
 
-  val wallet = ShellTab("tab/wallet", R.string.nav_wallet, Icons.AutoMirrored.Filled.ReceiptLong)
-  val scan = ShellTab("tab/scan", R.string.scan_bill, Icons.Filled.QrCodeScanner)
-  val card = ShellTab("tab/card", R.string.nav_card, Icons.Filled.QrCode2)
+  val wallet = ShellTab("tab/wallet", R.string.nav_wallet, BillIcons.ReceiptText)
+  val scan = ShellTab("tab/scan", R.string.scan_bill, BillIcons.ScanLine)
+  val card = ShellTab("tab/card", R.string.nav_card, BillIcons.QrCode)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,49 +82,143 @@ fun Shell(
   floatingActionButton: @Composable () -> Unit = {},
   content: @Composable (Modifier) -> Unit,
 ) {
-  Scaffold(
-    topBar = {
-      TopAppBar(
-        title = { Text(title, maxLines = 1) },
-        actions = {
-          if (showStatus) {
-            StatusIcons(
-              printerConnected = printerConnected,
-              printerName = printerName,
-              pendingSync = pendingSync,
-              offline = offline,
-              modifier = Modifier.padding(end = 16.dp),
+  val tokens = LocalTokens.current
+
+  Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    // Behind everything, and only at the top. Colour covering area is what a screen of
+    // white cards needs to stop reading as a form.
+    Box(
+      Modifier
+        .fillMaxWidth()
+        .height(GradientHeight)
+        .background(
+          Brush.verticalGradient(
+            listOf(tokens.sage, MaterialTheme.colorScheme.background),
+          ),
+        ),
+    )
+
+    Scaffold(
+      containerColor = Color.Transparent,
+      // A transparent container resolves to no content colour at all, which leaves every
+      // unstyled Text falling back to black. Said explicitly instead.
+      contentColor = MaterialTheme.colorScheme.onBackground,
+      topBar = {
+        TopAppBar(
+          title = {
+            Text(title, maxLines = 1, style = MaterialTheme.typography.headlineMedium)
+          },
+          actions = {
+            if (showStatus) {
+              StatusIcons(
+                printerConnected = printerConnected,
+                printerName = printerName,
+                pendingSync = pendingSync,
+                offline = offline,
+                modifier = Modifier.padding(end = 16.dp),
+              )
+            }
+          },
+          colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+          ),
+        )
+      },
+      bottomBar = { FloatingNav(tabs = tabs, selectedRoute = selectedRoute, onSelect = onSelect) },
+      floatingActionButton = floatingActionButton,
+    ) { padding ->
+      Box(Modifier.fillMaxSize()) {
+        content(Modifier.padding(padding))
+      }
+    }
+  }
+}
+
+/**
+ * The tabs, as one bar floating over the page.
+ *
+ * Five separate floating circles read as five loose buttons somebody scattered along the
+ * bottom edge; one container reads as a control. Every tab keeps its name — a shopkeeper
+ * should not have to learn what five stroke icons mean — and every slot is the same
+ * width, so choosing one moves nothing.
+ */
+@Composable
+private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (String) -> Unit) {
+  val tokens = LocalTokens.current
+
+  // Concentric: the pill behind the chosen icon is 28dp tall, so its radius is 14, and
+  // it is inset by 6. A stadium-shaped bar around that read as a lozenge somebody had
+  // dropped the tabs into rather than as the frame holding them.
+  val shape = RoundedCornerShape(Radius.bar)
+  val pill = RoundedCornerShape(Radius.pill)
+
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .navigationBarsPadding()
+      .padding(horizontal = Gutter, vertical = 8.dp)
+      .shadow(
+        elevation = if (tokens.isDark) 0.dp else 14.dp,
+        shape = shape,
+        ambientColor = tokens.shadow,
+        spotColor = tokens.shadow,
+      )
+      .clip(shape)
+      .background(MaterialTheme.colorScheme.surface)
+      .then(
+        if (tokens.isDark) Modifier.border(1.dp, tokens.border, shape) else Modifier,
+      )
+      .padding(horizontal = 6.dp, vertical = 6.dp),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    for (tab in tabs) {
+      val active = tab.route == selectedRoute
+
+      // Every slot is the same width, whichever one is chosen. The pill used to be sized
+      // by the label inside it, so picking a tab re-measured the whole row and every
+      // other icon slid sideways under the thumb that had just left one.
+      Column(
+        Modifier
+          .weight(1f)
+          .clip(RoundedCornerShape(Radius.medium))
+          .clickable { onSelect(tab.route) }
+          .padding(vertical = 5.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+      ) {
+        Box(
+          Modifier
+            .size(width = NavPill, height = NavPillHeight)
+            .clip(pill)
+            .background(if (active) tokens.ink else Color.Transparent),
+          contentAlignment = Alignment.Center,
+        ) {
+          BadgedBox(
+            badge = {
+              if (tab.badge > 0) Badge { Text(if (tab.badge > 99) "99+" else "${tab.badge}") }
+            },
+          ) {
+            Icon(
+              tab.icon,
+              contentDescription = null,
+              tint = if (active) tokens.onInk else MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.size(NavIcon),
             )
           }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(),
-      )
-    },
-    bottomBar = {
-      NavigationBar {
-        for (tab in tabs) {
-          NavigationBarItem(
-            selected = tab.route == selectedRoute,
-            onClick = { onSelect(tab.route) },
-            icon = {
-              BadgedBox(
-                badge = {
-                  if (tab.badge > 0) Badge { Text(if (tab.badge > 99) "99+" else "${tab.badge}") }
-                },
-              ) {
-                Icon(tab.icon, contentDescription = null)
-              }
-            },
-            label = { Text(stringResource(tab.labelRes), maxLines = 1) },
-            alwaysShowLabel = true,
-          )
         }
+        Spacer(Modifier.height(3.dp))
+        Text(
+          stringResource(tab.labelRes),
+          style = MaterialTheme.typography.labelSmall,
+          color = if (active) {
+            MaterialTheme.colorScheme.onSurface
+          } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+          },
+          maxLines = 1,
+          overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+        )
       }
-    },
-    floatingActionButton = floatingActionButton,
-  ) { padding ->
-    Box(Modifier.fillMaxSize()) {
-      content(Modifier.padding(padding))
     }
   }
 }
@@ -117,3 +229,9 @@ data class ShellTab(
   val icon: ImageVector,
   val badge: Int = 0,
 )
+
+/** Tall enough that the card under it has something behind it, short enough to be a hint. */
+private val GradientHeight = 210.dp
+private val NavPill = 40.dp
+private val NavPillHeight = 28.dp
+private val NavIcon = 20.dp

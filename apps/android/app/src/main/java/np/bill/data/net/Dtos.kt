@@ -34,10 +34,27 @@ data class AuthUser(
 @Serializable
 data class DevOtpResponse(val phoneNumber: String, val code: String)
 
+/**
+ * The newest build the server is handing out, and the oldest it still talks to.
+ *
+ * `minimumVersionCode` is the difference between an update the shopkeeper can put off
+ * and one that stops the app until it is taken.
+ */
+@Serializable
+data class AppReleaseResponse(
+  val versionName: String,
+  val versionCode: Int,
+  val minimumVersionCode: Int,
+  val apkUrl: String,
+  val notes: String = "",
+)
+
 @Serializable
 data class BootstrapResponse(
   val user: AuthUser,
   val store: StoreDto? = null,
+  /** What has been uploaded for review, so the onboarding knows what is still missing. */
+  val documents: List<StoreDocumentDto> = emptyList(),
   val role: String? = null,
   val serverTime: String,
   val fiscalYear: String,
@@ -68,6 +85,25 @@ data class StoreDto(
   val printFooterNote: String? = null,
   val bankDetails: String? = null,
   val cbmsEnabled: Boolean = false,
+  /**
+   * Where review has got to: pending, approved or rejected.
+   *
+   * Persisted with the rest of the store, so a till that opens with no signal still
+   * knows whether it may bill rather than finding out when the server refuses a sync.
+   */
+  val status: String = "pending",
+  /** Why it was refused, in words the shopkeeper reads. Null unless rejected. */
+  val reviewNote: String? = null,
+)
+
+/** A paper the business has uploaded. The bytes never come down; only the fact. */
+@Serializable
+data class StoreDocumentDto(
+  val id: String,
+  val kind: String,
+  val fileName: String? = null,
+  val mimeType: String,
+  val sizeBytes: Long,
 )
 
 @Serializable
@@ -251,6 +287,8 @@ data class ItemDto(
   val barcode: String? = null,
   val unit: String,
   val unitPricePaisa: Long,
+  val stockThousandths: Long? = null,
+  val tags: List<String> = emptyList(),
   val vatApplicable: Boolean,
   val active: Boolean,
   val updatedAt: String,
@@ -280,6 +318,8 @@ data class ItemUpsert(
   val barcode: String? = null,
   val unit: String = "pcs",
   val unitPricePaisa: Long,
+  val stockThousandths: Long? = null,
+  val tags: List<String> = emptyList(),
   val vatApplicable: Boolean = true,
   val active: Boolean = true,
 )
@@ -410,3 +450,9 @@ data class CreditNoteRequest(val reason: String)
 
 @Serializable
 data class CreditNoteResponse(@SerialName("creditNote") val creditNote: PublicInvoiceDto)
+
+@Serializable
+data class StoreDocumentResponse(val document: StoreDocumentDto)
+
+@Serializable
+data class StoreDocumentsResponse(val documents: List<StoreDocumentDto> = emptyList())

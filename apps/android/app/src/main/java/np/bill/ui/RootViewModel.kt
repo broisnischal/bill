@@ -17,6 +17,13 @@ data class RootState(
   val modeChosen: Boolean = false,
   val mode: AppMode = AppMode.BUSINESS,
   val hasStore: Boolean = false,
+  /**
+   * Whether the business has been through review.
+   *
+   * Read from the store the device already holds, so a till with no signal still opens on
+   * the right screen rather than on a biller that will be refused at the first sync.
+   */
+  val approved: Boolean = false,
 )
 
 /**
@@ -42,6 +49,7 @@ class RootViewModel @Inject constructor(
         modeChosen = current.hasStore || current.mode == AppMode.CUSTOMER,
         mode = current.mode,
         hasStore = current.hasStore,
+        approved = current.store?.status == "approved",
       )
 
       // Refreshing in the background can only add a store we did not know about; it never
@@ -49,7 +57,13 @@ class RootViewModel @Inject constructor(
       if (current.signedIn) {
         val refreshed = auth.bootstrap()
         if (refreshed is np.bill.data.net.ApiResult.Ok && refreshed.value) {
-          _state.value = _state.value.copy(hasStore = true)
+          // The bootstrap also carries where review has got to, so an approval that
+          // happened while the phone was in a pocket lands the shop on the biller.
+          val latest = session.current()
+          _state.value = _state.value.copy(
+            hasStore = true,
+            approved = latest.store?.status == "approved",
+          )
         }
       }
     }

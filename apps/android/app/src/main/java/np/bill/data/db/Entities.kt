@@ -134,12 +134,79 @@ data class ItemEntity(
   val barcode: String? = null,
   val unit: String,
   val unitPricePaisa: Long,
+  /**
+   * What is on the shelf, in thousandths of a unit, or null where the shop does not
+   * count this one. Zero and null are different answers: one says it is out, the other
+   * says nobody is keeping track.
+   */
+  val stockThousandths: Long? = null,
+  /**
+   * The shop's own labels, comma separated. Kept as one column rather than a join table
+   * because nothing queries across them: they group a list of a few hundred products on
+   * a phone, and a shop that needs more than that needs a different app.
+   */
+  val tags: String = "",
   val vatApplicable: Boolean,
   val active: Boolean,
   val updatedAt: Long,
   /** True for a row created here that the server has not been told about yet. */
   val pendingUpload: Boolean = false,
 )
+
+/**
+ * A basket the shop bills over and over.
+ *
+ * A meat counter rings up "khasi ko masu" forty times a day with only the weight
+ * changing; a kirana has four things that go together. A template is that basket with its
+ * usual quantity already in it, so the shopkeeper edits one number instead of typing the
+ * whole bill again.
+ *
+ * `usedCount` orders them. The row on the home screen is the shop's own muscle memory,
+ * and the one they reach for most should be the one on the left.
+ */
+@Entity(tableName = "bill_template")
+data class BillTemplateEntity(
+  @PrimaryKey val id: String,
+  val name: String,
+  val usedCount: Int = 0,
+  val updatedAt: Long,
+)
+
+@Entity(
+  tableName = "bill_template_line",
+  foreignKeys = [
+    ForeignKey(
+      entity = BillTemplateEntity::class,
+      parentColumns = ["id"],
+      childColumns = ["templateId"],
+      onDelete = ForeignKey.CASCADE,
+    ),
+  ],
+  indices = [Index("templateId")],
+)
+data class BillTemplateLineEntity(
+  @PrimaryKey(autoGenerate = true) val rowId: Long = 0,
+  val templateId: String,
+  val lineNo: Int,
+  /** Null for a line typed by hand, which is most of them on a meat counter. */
+  val itemId: String? = null,
+  val description: String,
+  val unit: String,
+  val quantityMilli: Long,
+  val unitPricePaisa: Long,
+  val vatApplicable: Boolean,
+)
+
+/** A template and its lines, read in one go. */
+data class BillTemplate(
+  @androidx.room.Embedded val template: BillTemplateEntity,
+  @androidx.room.Relation(parentColumn = "id", entityColumn = "templateId")
+  val lines: List<BillTemplateLineEntity>,
+)
+
+/** The labels on a product, as a list. Empty rather than a list holding one blank. */
+val ItemEntity.tagList: List<String>
+  get() = tags.split(",").map(String::trim).filter(String::isNotEmpty)
 
 @Entity(tableName = "customer", indices = [Index("name"), Index("phone")])
 data class CustomerEntity(

@@ -11,6 +11,7 @@ import np.bill.data.db.ItemEntity
 import np.bill.data.db.LeaseDao
 import np.bill.data.db.LeaseEntity
 import np.bill.data.db.SyncState
+import np.bill.data.db.tagList
 import np.bill.data.net.ApiResult
 import np.bill.data.net.BillApi
 import np.bill.data.net.CancellationDto
@@ -39,6 +40,7 @@ class SyncRepository @Inject constructor(
   private val bills: BillDao,
   private val leases: LeaseDao,
   private val catalog: CatalogDao,
+  private val catalogRepo: CatalogRepository,
   private val session: SessionStore,
   private val json: kotlinx.serialization.json.Json,
 ) {
@@ -134,6 +136,8 @@ class SyncRepository @Inject constructor(
         leases.upsert(body.leases.map(::toLease))
 
         catalog.upsertItems(body.catalog.items.map(::toItem))
+        // Anything the shop duplicated before names were checked collapses here.
+        catalogRepo.mergeDuplicates()
         catalog.upsertCustomers(body.catalog.customers.map(::toCustomer))
         session.setCatalogCursor(body.serverTime)
 
@@ -163,6 +167,8 @@ class SyncRepository @Inject constructor(
         barcode = item.barcode,
         unit = item.unit,
         unitPricePaisa = item.unitPricePaisa,
+        stockThousandths = item.stockThousandths,
+        tags = item.tagList,
         vatApplicable = item.vatApplicable,
         active = item.active,
       )
@@ -260,6 +266,8 @@ class SyncRepository @Inject constructor(
     barcode = dto.barcode,
     unit = dto.unit,
     unitPricePaisa = dto.unitPricePaisa,
+    stockThousandths = dto.stockThousandths,
+    tags = dto.tags.joinToString(","),
     vatApplicable = dto.vatApplicable,
     active = dto.active,
     updatedAt = Iso8601.parse(dto.updatedAt) ?: System.currentTimeMillis(),

@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import np.bill.R
-import np.bill.core.money.formatPaisa
+import np.bill.core.money.formatMoney
 import np.bill.core.nepali.BsDate
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.Field
@@ -72,7 +72,7 @@ fun DuesScreen(
         Row(verticalAlignment = Alignment.Bottom) {
           Text("Rs ", style = MaterialTheme.typography.titleLarge, color = tokens.due)
           Text(
-            formatPaisa(state.totalDuePaisa),
+            formatMoney(state.totalDuePaisa),
             style = MaterialTheme.typography.displaySmall,
             color = tokens.due,
           )
@@ -108,13 +108,13 @@ fun DuesScreen(
             }
             Column(horizontalAlignment = Alignment.End) {
               Text(
-                "Rs ${formatPaisa(entry.duePaisa)}",
+                "Rs ${formatMoney(entry.duePaisa)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = tokens.due,
               )
               if (entry.duePaisa != entry.bill.totalPaisa) {
                 Text(
-                  "of ${formatPaisa(entry.bill.totalPaisa)}",
+                  "of ${formatMoney(entry.bill.totalPaisa)}",
                   style = MaterialTheme.typography.labelSmall,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -153,7 +153,7 @@ private fun CollectSheet(
   onCollect: (Long, String) -> Unit,
   onDismiss: () -> Unit,
 ) {
-  var amount by remember { mutableStateOf(np.bill.core.money.paisaToDecimalString(duePaisa)) }
+  var amount by remember { mutableStateOf(np.bill.core.money.paisaToInput(duePaisa)) }
   var method by remember { mutableStateOf("cash") }
   val parsed = np.bill.core.money.parsePaisa(amount)
   val valid = parsed != null && parsed > 0 && parsed <= duePaisa
@@ -167,7 +167,7 @@ private fun CollectSheet(
     ) {
       Text(buyerName, style = MaterialTheme.typography.headlineSmall)
       Text(
-        stringResource(R.string.due_amount, formatPaisa(duePaisa)),
+        stringResource(R.string.due_amount, formatMoney(duePaisa)),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -179,7 +179,7 @@ private fun CollectSheet(
         label = stringResource(R.string.amount_received),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         error = if (parsed != null && parsed > duePaisa) {
-          stringResource(R.string.due_amount, formatPaisa(duePaisa))
+          stringResource(R.string.due_amount, formatMoney(duePaisa))
         } else {
           null
         },

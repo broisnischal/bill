@@ -70,6 +70,18 @@ fun formatPaisa(paisa: Long): String {
   }
 }
 
+/**
+ * Money for a screen, without the paisa nobody typed.
+ *
+ * "1300.00" is four characters of noise on a rate that is a round number, and a shop
+ * dealing in whole rupees sees them on every line. The paisa appear when there are any,
+ * which is the only time they mean something.
+ *
+ * The printed bill and the CBMS payload keep the strict two places — a tax document says
+ * 1300.00 — so this is a display formatter and never a wire one.
+ */
+fun formatMoney(paisa: Long): String = formatPaisa(paisa).removeSuffix(".00")
+
 /** The plain decimal string the API and CBMS expect, e.g. "1250.50". */
 fun paisaToDecimalString(paisa: Long): String {
   val negative = paisa < 0
@@ -82,11 +94,31 @@ fun paisaToDecimalString(paisa: Long): String {
   }
 }
 
+/**
+ * A quantity, to two places.
+ *
+ * Stored in thousandths because that is what the wire and the tax office use, shown to
+ * two because no counter in Nepal weighs to the gram: 0.154 kg of meat is 0.15 on the
+ * scale, on the paper and in the shopkeeper's head. Truncated rather than rounded up, so
+ * the printed quantity is never more than what was actually handed over.
+ */
+/**
+ * The same number, ready to be typed over.
+ *
+ * A field seeded with "1300.00" makes a shopkeeper delete three characters before they
+ * can change the rate. Without commas, because this goes into an input and a comma is
+ * not a digit.
+ */
+fun paisaToInput(paisa: Long): String = paisaToDecimalString(paisa).removeSuffix(".00")
+
 fun formatQuantity(quantityMilli: Long): String {
   val whole = quantityMilli / 1000
-  val fraction = (quantityMilli % 1000).toString().padStart(3, '0').trimEnd('0')
+  val fraction = ((quantityMilli % 1000) / 10).toString().padStart(2, '0').trimEnd('0')
   return if (fraction.isEmpty()) whole.toString() else "$whole.$fraction"
 }
+
+/** Snapped to the two places a quantity is shown in, so what prints is what is on screen. */
+fun roundQuantityMilli(quantityMilli: Long): Long = (quantityMilli / 10) * 10
 
 private val ONES = arrayOf(
   "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",

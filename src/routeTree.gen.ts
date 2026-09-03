@@ -12,12 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
+import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
 import { Route as AuthAppRouteRouteImport } from './routes/_auth/app/route'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as BTokenRouteImport } from './routes/b/$token'
 import { Route as PrintInvoiceIdRouteImport } from './routes/print/$invoiceId'
+import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
+import { Route as AuthAdminStoreIdRouteImport } from './routes/_auth/admin/$storeId'
 import { Route as AuthAppIndexRouteImport } from './routes/_auth/app/index'
 import { Route as AuthAppCustomersRouteImport } from './routes/_auth/app/customers'
 import { Route as AuthAppItemsRouteImport } from './routes/_auth/app/items'
@@ -34,12 +37,15 @@ import { Route as ApiV1WalletRouteImport } from './routes/api/v1/wallet'
 import { Route as AuthAppInvoicesIndexRouteImport } from './routes/_auth/app/invoices/index'
 import { Route as AuthAppInvoicesInvoiceIdRouteImport } from './routes/_auth/app/invoices/$invoiceId'
 import { Route as AuthAppInvoicesNewRouteImport } from './routes/_auth/app/invoices/new'
+import { Route as ApiAdminDocumentsDocumentIdRouteImport } from './routes/api/admin/documents/$documentId'
 import { Route as ApiInvoicesInvoiceIdPdfRouteImport } from './routes/api/invoices/$invoiceId/pdf'
+import { Route as ApiV1AppAndroidRouteImport } from './routes/api/v1/app/android'
 import { Route as ApiV1BillsTokenRouteImport } from './routes/api/v1/bills/$token'
 import { Route as ApiV1DevOtpRouteImport } from './routes/api/v1/dev/otp'
 import { Route as ApiV1InvoicesIndexRouteImport } from './routes/api/v1/invoices/index'
 import { Route as ApiV1InvoicesInvoiceIdRouteImport } from './routes/api/v1/invoices/$invoiceId'
 import { Route as ApiV1ProfilesTokenRouteImport } from './routes/api/v1/profiles/$token'
+import { Route as ApiV1StoreDocumentsRouteImport } from './routes/api/v1/store/documents'
 import { Route as ApiV1WebLoginIndexRouteImport } from './routes/api/v1/web-login/index'
 import { Route as ApiV1WebLoginLookupRouteImport } from './routes/api/v1/web-login/lookup'
 import { Route as ApiV1InvoicesInvoiceIdCreditNoteRouteImport } from './routes/api/v1/invoices/$invoiceId/credit-note'
@@ -56,6 +62,11 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
 const GuestRouteRoute = GuestRouteRouteImport.update({
   id: '/_guest',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthAdminRouteRoute = AuthAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthAppRouteRoute = AuthAppRouteRouteImport.update({
   id: '/app',
@@ -86,6 +97,16 @@ const PrintInvoiceIdRoute = PrintInvoiceIdRouteImport.update({
   id: '/print/$invoiceId',
   path: '/print/$invoiceId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthAdminIndexRoute = AuthAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthAdminRouteRoute,
+} as any)
+const AuthAdminStoreIdRoute = AuthAdminStoreIdRouteImport.update({
+  id: '/$storeId',
+  path: '/$storeId',
+  getParentRoute: () => AuthAdminRouteRoute,
 } as any)
 const AuthAppIndexRoute = AuthAppIndexRouteImport.update({
   id: '/',
@@ -168,9 +189,20 @@ const AuthAppInvoicesNewRoute = AuthAppInvoicesNewRouteImport.update({
   path: '/invoices/new',
   getParentRoute: () => AuthAppRouteRoute,
 } as any)
+const ApiAdminDocumentsDocumentIdRoute =
+  ApiAdminDocumentsDocumentIdRouteImport.update({
+    id: '/api/admin/documents/$documentId',
+    path: '/api/admin/documents/$documentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiInvoicesInvoiceIdPdfRoute = ApiInvoicesInvoiceIdPdfRouteImport.update({
   id: '/api/invoices/$invoiceId/pdf',
   path: '/api/invoices/$invoiceId/pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1AppAndroidRoute = ApiV1AppAndroidRouteImport.update({
+  id: '/api/v1/app/android',
+  path: '/api/v1/app/android',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1BillsTokenRoute = ApiV1BillsTokenRouteImport.update({
@@ -198,6 +230,11 @@ const ApiV1ProfilesTokenRoute = ApiV1ProfilesTokenRouteImport.update({
   path: '/api/v1/profiles/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1StoreDocumentsRoute = ApiV1StoreDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => ApiV1StoreRoute,
+} as any)
 const ApiV1WebLoginIndexRoute = ApiV1WebLoginIndexRouteImport.update({
   id: '/api/v1/web-login/',
   path: '/api/v1/web-login/',
@@ -217,12 +254,14 @@ const ApiV1InvoicesInvoiceIdCreditNoteRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AuthAdminRouteRouteWithChildren
   '/app': typeof AuthAppRouteRouteWithChildren
   '/onboarding': typeof AuthOnboardingRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/b/$token': typeof BTokenRoute
   '/print/$invoiceId': typeof PrintInvoiceIdRoute
+  '/admin/$storeId': typeof AuthAdminStoreIdRoute
   '/app/customers': typeof AuthAppCustomersRoute
   '/app/items': typeof AuthAppItemsRoute
   '/app/reports': typeof AuthAppReportsRoute
@@ -232,17 +271,21 @@ export interface FileRoutesByFullPath {
   '/api/v1/catalog': typeof ApiV1CatalogRoute
   '/api/v1/devices': typeof ApiV1DevicesRoute
   '/api/v1/me': typeof ApiV1MeRoute
-  '/api/v1/store': typeof ApiV1StoreRoute
+  '/api/v1/store': typeof ApiV1StoreRouteWithChildren
   '/api/v1/sync': typeof ApiV1SyncRoute
   '/api/v1/wallet': typeof ApiV1WalletRoute
+  '/admin/': typeof AuthAdminIndexRoute
   '/app/': typeof AuthAppIndexRoute
   '/app/invoices/$invoiceId': typeof AuthAppInvoicesInvoiceIdRoute
   '/app/invoices/new': typeof AuthAppInvoicesNewRoute
+  '/api/admin/documents/$documentId': typeof ApiAdminDocumentsDocumentIdRoute
   '/api/invoices/$invoiceId/pdf': typeof ApiInvoicesInvoiceIdPdfRoute
+  '/api/v1/app/android': typeof ApiV1AppAndroidRoute
   '/api/v1/bills/$token': typeof ApiV1BillsTokenRoute
   '/api/v1/dev/otp': typeof ApiV1DevOtpRoute
   '/api/v1/invoices/$invoiceId': typeof ApiV1InvoicesInvoiceIdRouteWithChildren
   '/api/v1/profiles/$token': typeof ApiV1ProfilesTokenRoute
+  '/api/v1/store/documents': typeof ApiV1StoreDocumentsRoute
   '/api/v1/web-login/lookup': typeof ApiV1WebLoginLookupRoute
   '/app/invoices/': typeof AuthAppInvoicesIndexRoute
   '/api/v1/invoices/': typeof ApiV1InvoicesIndexRoute
@@ -256,6 +299,7 @@ export interface FileRoutesByTo {
   '/signup': typeof GuestSignupRoute
   '/b/$token': typeof BTokenRoute
   '/print/$invoiceId': typeof PrintInvoiceIdRoute
+  '/admin/$storeId': typeof AuthAdminStoreIdRoute
   '/app/customers': typeof AuthAppCustomersRoute
   '/app/items': typeof AuthAppItemsRoute
   '/app/reports': typeof AuthAppReportsRoute
@@ -265,17 +309,21 @@ export interface FileRoutesByTo {
   '/api/v1/catalog': typeof ApiV1CatalogRoute
   '/api/v1/devices': typeof ApiV1DevicesRoute
   '/api/v1/me': typeof ApiV1MeRoute
-  '/api/v1/store': typeof ApiV1StoreRoute
+  '/api/v1/store': typeof ApiV1StoreRouteWithChildren
   '/api/v1/sync': typeof ApiV1SyncRoute
   '/api/v1/wallet': typeof ApiV1WalletRoute
+  '/admin': typeof AuthAdminIndexRoute
   '/app': typeof AuthAppIndexRoute
   '/app/invoices/$invoiceId': typeof AuthAppInvoicesInvoiceIdRoute
   '/app/invoices/new': typeof AuthAppInvoicesNewRoute
+  '/api/admin/documents/$documentId': typeof ApiAdminDocumentsDocumentIdRoute
   '/api/invoices/$invoiceId/pdf': typeof ApiInvoicesInvoiceIdPdfRoute
+  '/api/v1/app/android': typeof ApiV1AppAndroidRoute
   '/api/v1/bills/$token': typeof ApiV1BillsTokenRoute
   '/api/v1/dev/otp': typeof ApiV1DevOtpRoute
   '/api/v1/invoices/$invoiceId': typeof ApiV1InvoicesInvoiceIdRouteWithChildren
   '/api/v1/profiles/$token': typeof ApiV1ProfilesTokenRoute
+  '/api/v1/store/documents': typeof ApiV1StoreDocumentsRoute
   '/api/v1/web-login/lookup': typeof ApiV1WebLoginLookupRoute
   '/app/invoices': typeof AuthAppInvoicesIndexRoute
   '/api/v1/invoices': typeof ApiV1InvoicesIndexRoute
@@ -287,12 +335,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
   '/_guest': typeof GuestRouteRouteWithChildren
+  '/_auth/admin': typeof AuthAdminRouteRouteWithChildren
   '/_auth/app': typeof AuthAppRouteRouteWithChildren
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
   '/b/$token': typeof BTokenRoute
   '/print/$invoiceId': typeof PrintInvoiceIdRoute
+  '/_auth/admin/$storeId': typeof AuthAdminStoreIdRoute
   '/_auth/app/customers': typeof AuthAppCustomersRoute
   '/_auth/app/items': typeof AuthAppItemsRoute
   '/_auth/app/reports': typeof AuthAppReportsRoute
@@ -302,17 +352,21 @@ export interface FileRoutesById {
   '/api/v1/catalog': typeof ApiV1CatalogRoute
   '/api/v1/devices': typeof ApiV1DevicesRoute
   '/api/v1/me': typeof ApiV1MeRoute
-  '/api/v1/store': typeof ApiV1StoreRoute
+  '/api/v1/store': typeof ApiV1StoreRouteWithChildren
   '/api/v1/sync': typeof ApiV1SyncRoute
   '/api/v1/wallet': typeof ApiV1WalletRoute
+  '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/app/': typeof AuthAppIndexRoute
   '/_auth/app/invoices/$invoiceId': typeof AuthAppInvoicesInvoiceIdRoute
   '/_auth/app/invoices/new': typeof AuthAppInvoicesNewRoute
+  '/api/admin/documents/$documentId': typeof ApiAdminDocumentsDocumentIdRoute
   '/api/invoices/$invoiceId/pdf': typeof ApiInvoicesInvoiceIdPdfRoute
+  '/api/v1/app/android': typeof ApiV1AppAndroidRoute
   '/api/v1/bills/$token': typeof ApiV1BillsTokenRoute
   '/api/v1/dev/otp': typeof ApiV1DevOtpRoute
   '/api/v1/invoices/$invoiceId': typeof ApiV1InvoicesInvoiceIdRouteWithChildren
   '/api/v1/profiles/$token': typeof ApiV1ProfilesTokenRoute
+  '/api/v1/store/documents': typeof ApiV1StoreDocumentsRoute
   '/api/v1/web-login/lookup': typeof ApiV1WebLoginLookupRoute
   '/_auth/app/invoices/': typeof AuthAppInvoicesIndexRoute
   '/api/v1/invoices/': typeof ApiV1InvoicesIndexRoute
@@ -323,12 +377,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
     | '/onboarding'
     | '/login'
     | '/signup'
     | '/b/$token'
     | '/print/$invoiceId'
+    | '/admin/$storeId'
     | '/app/customers'
     | '/app/items'
     | '/app/reports'
@@ -341,14 +397,18 @@ export interface FileRouteTypes {
     | '/api/v1/store'
     | '/api/v1/sync'
     | '/api/v1/wallet'
+    | '/admin/'
     | '/app/'
     | '/app/invoices/$invoiceId'
     | '/app/invoices/new'
+    | '/api/admin/documents/$documentId'
     | '/api/invoices/$invoiceId/pdf'
+    | '/api/v1/app/android'
     | '/api/v1/bills/$token'
     | '/api/v1/dev/otp'
     | '/api/v1/invoices/$invoiceId'
     | '/api/v1/profiles/$token'
+    | '/api/v1/store/documents'
     | '/api/v1/web-login/lookup'
     | '/app/invoices/'
     | '/api/v1/invoices/'
@@ -362,6 +422,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/b/$token'
     | '/print/$invoiceId'
+    | '/admin/$storeId'
     | '/app/customers'
     | '/app/items'
     | '/app/reports'
@@ -374,14 +435,18 @@ export interface FileRouteTypes {
     | '/api/v1/store'
     | '/api/v1/sync'
     | '/api/v1/wallet'
+    | '/admin'
     | '/app'
     | '/app/invoices/$invoiceId'
     | '/app/invoices/new'
+    | '/api/admin/documents/$documentId'
     | '/api/invoices/$invoiceId/pdf'
+    | '/api/v1/app/android'
     | '/api/v1/bills/$token'
     | '/api/v1/dev/otp'
     | '/api/v1/invoices/$invoiceId'
     | '/api/v1/profiles/$token'
+    | '/api/v1/store/documents'
     | '/api/v1/web-login/lookup'
     | '/app/invoices'
     | '/api/v1/invoices'
@@ -392,12 +457,14 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/_guest'
+    | '/_auth/admin'
     | '/_auth/app'
     | '/_auth/onboarding'
     | '/_guest/login'
     | '/_guest/signup'
     | '/b/$token'
     | '/print/$invoiceId'
+    | '/_auth/admin/$storeId'
     | '/_auth/app/customers'
     | '/_auth/app/items'
     | '/_auth/app/reports'
@@ -410,14 +477,18 @@ export interface FileRouteTypes {
     | '/api/v1/store'
     | '/api/v1/sync'
     | '/api/v1/wallet'
+    | '/_auth/admin/'
     | '/_auth/app/'
     | '/_auth/app/invoices/$invoiceId'
     | '/_auth/app/invoices/new'
+    | '/api/admin/documents/$documentId'
     | '/api/invoices/$invoiceId/pdf'
+    | '/api/v1/app/android'
     | '/api/v1/bills/$token'
     | '/api/v1/dev/otp'
     | '/api/v1/invoices/$invoiceId'
     | '/api/v1/profiles/$token'
+    | '/api/v1/store/documents'
     | '/api/v1/web-login/lookup'
     | '/_auth/app/invoices/'
     | '/api/v1/invoices/'
@@ -436,10 +507,12 @@ export interface RootRouteChildren {
   ApiV1CatalogRoute: typeof ApiV1CatalogRoute
   ApiV1DevicesRoute: typeof ApiV1DevicesRoute
   ApiV1MeRoute: typeof ApiV1MeRoute
-  ApiV1StoreRoute: typeof ApiV1StoreRoute
+  ApiV1StoreRoute: typeof ApiV1StoreRouteWithChildren
   ApiV1SyncRoute: typeof ApiV1SyncRoute
   ApiV1WalletRoute: typeof ApiV1WalletRoute
+  ApiAdminDocumentsDocumentIdRoute: typeof ApiAdminDocumentsDocumentIdRoute
   ApiInvoicesInvoiceIdPdfRoute: typeof ApiInvoicesInvoiceIdPdfRoute
+  ApiV1AppAndroidRoute: typeof ApiV1AppAndroidRoute
   ApiV1BillsTokenRoute: typeof ApiV1BillsTokenRoute
   ApiV1DevOtpRoute: typeof ApiV1DevOtpRoute
   ApiV1InvoicesInvoiceIdRoute: typeof ApiV1InvoicesInvoiceIdRouteWithChildren
@@ -471,6 +544,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof GuestRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/admin': {
+      id: '/_auth/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthAdminRouteRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
     '/_auth/app': {
       id: '/_auth/app'
@@ -513,6 +593,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/print/$invoiceId'
       preLoaderRoute: typeof PrintInvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/admin/': {
+      id: '/_auth/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthAdminIndexRouteImport
+      parentRoute: typeof AuthAdminRouteRoute
+    }
+    '/_auth/admin/$storeId': {
+      id: '/_auth/admin/$storeId'
+      path: '/$storeId'
+      fullPath: '/admin/$storeId'
+      preLoaderRoute: typeof AuthAdminStoreIdRouteImport
+      parentRoute: typeof AuthAdminRouteRoute
     }
     '/_auth/app/': {
       id: '/_auth/app/'
@@ -626,11 +720,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAppInvoicesNewRouteImport
       parentRoute: typeof AuthAppRouteRoute
     }
+    '/api/admin/documents/$documentId': {
+      id: '/api/admin/documents/$documentId'
+      path: '/api/admin/documents/$documentId'
+      fullPath: '/api/admin/documents/$documentId'
+      preLoaderRoute: typeof ApiAdminDocumentsDocumentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/invoices/$invoiceId/pdf': {
       id: '/api/invoices/$invoiceId/pdf'
       path: '/api/invoices/$invoiceId/pdf'
       fullPath: '/api/invoices/$invoiceId/pdf'
       preLoaderRoute: typeof ApiInvoicesInvoiceIdPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/app/android': {
+      id: '/api/v1/app/android'
+      path: '/api/v1/app/android'
+      fullPath: '/api/v1/app/android'
+      preLoaderRoute: typeof ApiV1AppAndroidRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/bills/$token': {
@@ -668,6 +776,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ProfilesTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/store/documents': {
+      id: '/api/v1/store/documents'
+      path: '/documents'
+      fullPath: '/api/v1/store/documents'
+      preLoaderRoute: typeof ApiV1StoreDocumentsRouteImport
+      parentRoute: typeof ApiV1StoreRoute
+    }
     '/api/v1/web-login/': {
       id: '/api/v1/web-login/'
       path: '/api/v1/web-login'
@@ -691,6 +806,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthAdminRouteRouteChildren {
+  AuthAdminStoreIdRoute: typeof AuthAdminStoreIdRoute
+  AuthAdminIndexRoute: typeof AuthAdminIndexRoute
+}
+
+const AuthAdminRouteRouteChildren: AuthAdminRouteRouteChildren = {
+  AuthAdminStoreIdRoute: AuthAdminStoreIdRoute,
+  AuthAdminIndexRoute: AuthAdminIndexRoute,
+}
+
+const AuthAdminRouteRouteWithChildren = AuthAdminRouteRoute._addFileChildren(
+  AuthAdminRouteRouteChildren,
+)
 
 interface AuthAppRouteRouteChildren {
   AuthAppCustomersRoute: typeof AuthAppCustomersRoute
@@ -719,11 +848,13 @@ const AuthAppRouteRouteWithChildren = AuthAppRouteRoute._addFileChildren(
 )
 
 interface AuthRouteRouteChildren {
+  AuthAdminRouteRoute: typeof AuthAdminRouteRouteWithChildren
   AuthAppRouteRoute: typeof AuthAppRouteRouteWithChildren
   AuthOnboardingRoute: typeof AuthOnboardingRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
+  AuthAdminRouteRoute: AuthAdminRouteRouteWithChildren,
   AuthAppRouteRoute: AuthAppRouteRouteWithChildren,
   AuthOnboardingRoute: AuthOnboardingRoute,
 }
@@ -744,6 +875,18 @@ const GuestRouteRouteChildren: GuestRouteRouteChildren = {
 
 const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
   GuestRouteRouteChildren,
+)
+
+interface ApiV1StoreRouteChildren {
+  ApiV1StoreDocumentsRoute: typeof ApiV1StoreDocumentsRoute
+}
+
+const ApiV1StoreRouteChildren: ApiV1StoreRouteChildren = {
+  ApiV1StoreDocumentsRoute: ApiV1StoreDocumentsRoute,
+}
+
+const ApiV1StoreRouteWithChildren = ApiV1StoreRoute._addFileChildren(
+  ApiV1StoreRouteChildren,
 )
 
 interface ApiV1InvoicesInvoiceIdRouteChildren {
@@ -772,10 +915,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1CatalogRoute: ApiV1CatalogRoute,
   ApiV1DevicesRoute: ApiV1DevicesRoute,
   ApiV1MeRoute: ApiV1MeRoute,
-  ApiV1StoreRoute: ApiV1StoreRoute,
+  ApiV1StoreRoute: ApiV1StoreRouteWithChildren,
   ApiV1SyncRoute: ApiV1SyncRoute,
   ApiV1WalletRoute: ApiV1WalletRoute,
+  ApiAdminDocumentsDocumentIdRoute: ApiAdminDocumentsDocumentIdRoute,
   ApiInvoicesInvoiceIdPdfRoute: ApiInvoicesInvoiceIdPdfRoute,
+  ApiV1AppAndroidRoute: ApiV1AppAndroidRoute,
   ApiV1BillsTokenRoute: ApiV1BillsTokenRoute,
   ApiV1DevOtpRoute: ApiV1DevOtpRoute,
   ApiV1InvoicesInvoiceIdRoute: ApiV1InvoicesInvoiceIdRouteWithChildren,

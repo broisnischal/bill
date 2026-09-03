@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 
 import { readShopperLink } from "#/lib/api/cards.ts";
 import { type Db, db, withTransaction } from "#/lib/db/index.ts";
@@ -10,6 +10,7 @@ import {
   invoiceCounter,
   invoiceItem,
   invoicePayment,
+  item,
   store as storeTable,
 } from "#/lib/db/schema/index.ts";
 import type { AuditAction, AuditMeta, InvoiceType, PrintFormat } from "#/lib/db/schema/types.ts";
@@ -18,6 +19,7 @@ import { decryptSecret } from "#/lib/ird/credentials.ts";
 import { fiscalYearFor, toBsString } from "#/lib/nepali/date.ts";
 import { amountInWords } from "#/lib/nepali/money.ts";
 import { invoicePdfKey, putPdf } from "#/lib/storage/archive.ts";
+import { vatRateFor } from "#/lib/tax/vat.ts";
 
 import { ABBREVIATED_INVOICE_LIMIT_PAISA, computeInvoice } from "./calc";
 import { consumeLeasedSequence } from "./lease";
@@ -126,6 +128,30 @@ async function recordAudit(
   });
 }
 
+/**
+ * Moves the shelf count as goods leave on a bill or come back on a credit note.
+ *
+ * Only for the products a shop actually counts. A null stock means nobody is keeping
+ * track, and a sale must not quietly turn that into a number. The count is clamped at
+ * zero: one that has drifted is put right by counting the shelf, not by carrying a
+ * negative nobody can explain.
+ */
+async function moveStock(
+  tx: { update: typeof db.update },
+  lines: { itemId?: string | null; quantityMilli: number }[],
+  direction: 1 | -1,
+) {
+  for (const line of lines) {
+    if (!line.itemId) continue;
+    await tx
+      .update(item)
+      .set({
+        stockThousandths: sql`max(0, ${item.stockThousandths} + ${direction * line.quantityMilli})`,
+      })
+      .where(and(eq(item.id, line.itemId), isNotNull(item.stockThousandths)));
+  }
+}
+
 export async function createInvoice({
   store,
   actor,
@@ -138,7 +164,7 @@ export async function createInvoice({
   issuedAt?: Date;
 }) {
   // A taxpayer registered for PAN only does not charge VAT, whatever the form sent.
-  const vatRateBp = store.taxpayerType === "vat" ? store.vatRateBp : 0;
+  const vatRateBp = vatRateFor(store);
   const totals = computeInvoice({
     lines: input.lines,
     invoiceDiscountPaisa: input.discountPaisa,
@@ -232,6 +258,8 @@ export async function createInvoice({
       })),
     );
 
+    await moveStock(tx, totals.lines, -1);
+
     await recordAudit(tx, {
       invoiceId: row.id,
       storeId: store.id,
@@ -305,7 +333,7 @@ export async function createLeasedInvoice({
   }
 
   const issuedAt = new Date(input.issuedAt);
-  const vatRateBp = store.taxpayerType === "vat" ? store.vatRateBp : 0;
+  const vatRateBp = vatRateFor(store);
   const totals = computeInvoice({
     lines: input.lines,
     invoiceDiscountPaisa: input.discountPaisa,
@@ -429,6 +457,8 @@ export async function createLeasedInvoice({
         lineTotalPaisa: line.lineTotalPaisa,
       })),
     );
+
+    await moveStock(tx, totals.lines, -1);
 
     await recordAudit(tx, {
       invoiceId: row.id,
@@ -708,6 +738,9 @@ export async function createCreditNote({
         lineTotalPaisa: line.lineTotalPaisa,
       })),
     );
+
+    // A credit note reverses the sale in full, so the goods are back on the shelf.
+    await moveStock(tx, original.items, 1);
 
     await recordAudit(tx, {
       invoiceId: row.id,

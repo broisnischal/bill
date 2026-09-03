@@ -254,4 +254,115 @@
     <string name="web_login_approve">अनुमति दिनुहोस्</string>
     <string name="web_login_deny">म होइन</string>
     <string name="web_login_done">कम्प्युटर साइन इन भयो।</string>
+
+    <string name="required">अनिवार्य</string>
+
+    <string name="takings_today">आजको बिक्री</string>
+    <string name="recent_bills">पछिल्ला बिल</string>
+    <string name="see_all">सबै हेर्नुहोस्</string>
+
+    <string name="pick_date">मिति छान्नुहोस्</string>
+
+    <string name="nav_customers_tab">ग्राहक</string>
+
+    <string name="taxpayer_pan_note">बिलमा तपाईंको PAN जान्छ, कर लाग्दैन। धेरैजसो पसललाई यही चाहिन्छ।</string>
+    <string name="taxpayer_vat_note">बिलमा १३% भ्याट लाग्छ र कर बीजक छापिन्छ। IRD ले यो PAN भ्याटमा दर्ता गरेको भए मात्र खोल्नुहोस्।</string>
+
+    <string name="sign_in_offline">इन्टरनेट छैन। साइन इन गर्न एक क्षण इन्टरनेट चाहिन्छ — कोड SMS मा आउँछ।</string>
+    <string name="otp_offline">इन्टरनेट छैन। कोड जाँच्न इन्टरनेट चाहिन्छ।</string>
+
+    <string name="step_name_title">पसलको नाम के हो?</string>
+    <string name="step_name_detail">यो हरेक बिलको सिरानमा छापिन्छ।</string>
+    <string name="step_pan_title">तपाईंको PAN</string>
+    <string name="step_pan_detail">प्रमाणपत्रमा भएको नम्बर र जारी मिति। दुवै बिलमा जान्छन्।</string>
+    <string name="step_place_title">पसल कहाँ छ?</string>
+    <string name="step_place_detail">ग्राहकले भेट्ने ठेगाना।</string>
+    <string name="continue_label">अगाडि</string>
+    <string name="back">पछाडि</string>
+
+    <string name="review_title">हामी तपाईंका कागजपत्र जाँच्दै छौं</string>
+    <string name="review_rejected_title">केही मिलाउनुपर्ने छ</string>
+    <string name="review_waiting">पसलले बिलमा PAN छाप्न पाउनुअघि कसैले तपाईंको PAN प्रमाणपत्र पढ्छ। सकिनासाथ SMS आउँछ, प्रायः त्यही दिन।</string>
+    <string name="review_needs_pan">PAN प्रमाणपत्रको फोटो पठाउनुहोस्, त्यसपछि जाँच सुरु हुन्छ। यो बिना स्वीकृत हुँदैन।</string>
+    <string name="review_pan">PAN %1$s</string>
+    <string name="review_papers">तपाईंका कागजपत्र</string>
+    <string name="review_refresh">फेरि जाँच्नुहोस्</string>
+    <string name="doc_pan">PAN प्रमाणपत्र</string>
+    <string name="doc_registration">दर्ता प्रमाणपत्र</string>
+    <string name="doc_tax_clearance">कर चुक्ता प्रमाणपत्र</string>
+    <string name="doc_required">अनिवार्य। पानाको फोटो भए हुन्छ।</string>
+    <string name="doc_optional">वैकल्पिक, तर जाँच छिटो हुन्छ।</string>
+    <string name="doc_upload">पठाउनुहोस्</string>
+    <string name="doc_replace">बदल्नुहोस्</string>
+
+    <string name="mode_subtitle">पछि सेटिङमा बदल्न सकिन्छ।</string>
+
+    <string name="review_incomplete_title">एउटा कागज बाँकी</string>
+    <string name="review_send_pan">PAN प्रमाणपत्र पठाउनुहोस्</string>
+    <string name="review_checking">जाँच्दै…</string>
+    <string name="stage_submitted">पठाइयो</string>
+    <string name="stage_review">जाँचमा</string>
+    <string name="stage_approved">स्वीकृत</string>
+
+    <string name="numbers_fetching">कार्यालयबाट बिल नम्बर लिँदै। एक क्षण।</string>
+
+    <string name="numbers_refused">कार्यालयबाट बिल नम्बर आएको छैन। प्रायः व्यवसाय जाँचमा भएको हुन्छ।</string>
+
+    <!-- Bill templates -->
+    <string name="template_empty">यो बिलमा सुरक्षित गर्ने कुरा छैन।</string>
+
+    <string name="quick_bill">छिटो बिल</string>
+    <string name="quick_bill_empty">बिल बनाएपछि टेम्प्लेट बनाउनुहोस्। यहाँ देखिन्छ र अर्को बिल एक थिचाइमा सुरु हुन्छ।</string>
+    <string name="template_save">टेम्प्लेट बनाउनुहोस्</string>
+    <string name="template_name">टेम्प्लेटको नाम</string>
+    <string name="template_name_hint">पसलले यसलाई भन्ने नाम। मासु, किराना, ग्यास।</string>
+    <string name="template_saved">सुरक्षित भयो। गृह पृष्ठमा देखिन्छ।</string>
+    <string name="template_remove_title">%1$s हटाउने?</string>
+    <string name="template_remove_body">यसबाट बनेका बिल जस्तै रहन्छन्। सर्टकट मात्र हट्छ।</string>
+
+    <!-- Products -->
+    <string name="in_stock">स्टकमा</string>
+    <string name="in_stock_hint">यसको गन्ती राख्नुहुन्न भने खाली छोड्नुहोस्</string>
+    <string name="labels">लेबल</string>
+    <string name="new_label">नयाँ लेबल</string>
+    <string name="more_details">थप विवरण</string>
+    <string name="stock_left">%1$s %2$s बाँकी</string>
+    <string name="stock_out">स्टक सकियो</string>
+
+    <!-- Cancelling a bill -->
+    <string name="cancel_bill_title">%1$s रद्द गर्ने?</string>
+    <string name="cancel_bill_body">बिल रजिस्टर र रिटर्नमा रद्द भनी रहन्छ। सामान फिर्ता आएको वा रकम फेरिएको भए क्रेडिट नोट प्रयोग गर्नुहोस्।</string>
+    <string name="cancel_reason_required">कारण (अनिवार्य)</string>
+    <string name="cancel_reason_pan">खरिदकर्ताको PAN गलत</string>
+    <string name="cancel_reason_amount">रकम गलत</string>
+    <string name="cancel_reason_duplicate">दोहोरो बिल</string>
+    <string name="cancel_reason_no_sale">बिक्री भएन</string>
+    <string name="cancel_reason_other">अरू केही</string>
+    <string name="cancel_reason_hint">यो लेखापरीक्षकले पढ्छन्। के गलत भयो लेख्नुहोस्।</string>
+    <string name="cancel_bill_confirm">बिल रद्द गर्ने</string>
+    <string name="cancel_keep">बिल राख्ने</string>
+
+    <!-- Updates -->
+    <string name="about">बारेमा</string>
+    <string name="app_version">संस्करण %1$s (%2$d)</string>
+    <string name="update_check">अपडेट आएको छ कि हेर्नुहोस्</string>
+    <string name="update_newest">यही नै नयाँ संस्करण हो।</string>
+    <string name="update_available">नयाँ Bill आएको छ</string>
+    <string name="update_required">बिल बनाउन अपडेट गर्नुहोस्</string>
+    <string name="update_version_line">संस्करण %1$s। यो फोनमा %2$s छ।</string>
+    <string name="update_optional_body">पसल खाली हुँदा गर्नुहोस्। फोनमा भएको केही पनि हराउँदैन।</string>
+    <string name="update_required_body">यो संस्करणबाट कार्यालयमा बिल जाँदैन, त्यसैले यसमा बनेको बिल अस्वीकार हुन्छ। अपडेट गर्न एक मिनेट लाग्छ, र फोनमा भएको केही पनि हराउँदैन।</string>
+    <string name="update_now">अहिले अपडेट गर्नुहोस्</string>
+    <string name="update_later">अहिले होइन</string>
+    <string name="update_downloading">डाउनलोड हुँदै %1$d%%</string>
+    <string name="update_permission">अर्को एप इन्स्टल गर्न एन्ड्रोइडले एकपटक अनुमति माग्छ। अनुमति दिएर फेरि अपडेट थिच्नुहोस्।</string>
+    <string name="update_failed">डाउनलोड पूरा भएन। ब्राउजरमा फाइल खोलिएको छ।</string>
+    <plurals name="bills_count">
+        <item quantity="one">%1$d बिल</item>
+        <item quantity="other">%1$d बिल</item>
+    </plurals>
+    <plurals name="line_count">
+        <item quantity="one">%1$d लाइन</item>
+        <item quantity="other">%1$d लाइन</item>
+    </plurals>
 </resources>

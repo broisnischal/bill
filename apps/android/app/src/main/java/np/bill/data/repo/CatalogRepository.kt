@@ -44,9 +44,21 @@ class CatalogRepository @Inject constructor(
     barcode: String? = null,
     sku: String? = null,
     description: String? = null,
+    stockThousandths: Long? = null,
+    tags: List<String> = emptyList(),
   ): ItemEntity {
+    /**
+     * A name the shop already sells is that product, not a new one.
+     *
+     * Without this, a line typed by hand rather than picked from the list wrote a second
+     * "Masu" on every bill, and the suggestion dropdown filled up with the same product
+     * at the same price. Saving an existing name now updates it, which is also what a
+     * shopkeeper correcting a rate expects.
+     */
+    val existing = id?.let { null } ?: catalog.itemByName(name.trim())
+
     val item = ItemEntity(
-      id = id ?: UUID.randomUUID().toString(),
+      id = id ?: existing?.id ?: UUID.randomUUID().toString(),
       name = name.trim(),
       description = description?.trim()?.ifBlank { null },
       hsCode = hsCode?.trim()?.ifBlank { null },
@@ -54,6 +66,10 @@ class CatalogRepository @Inject constructor(
       barcode = barcode?.trim()?.ifBlank { null },
       unit = unit.trim().ifBlank { "pcs" },
       unitPricePaisa = unitPricePaisa,
+      stockThousandths = stockThousandths,
+      // Lowercased and de-duplicated on the way in, so "Rice" and "rice" are one label
+      // rather than two that look identical in a list.
+      tags = tags.map { it.trim().lowercase() }.filter(String::isNotEmpty).distinct().joinToString(","),
       vatApplicable = vatApplicable,
       active = true,
       updatedAt = System.currentTimeMillis(),
@@ -62,6 +78,22 @@ class CatalogRepository @Inject constructor(
     catalog.upsertItems(listOf(item))
     return item
   }
+
+  /**
+   * Removes products that are the same product.
+   *
+   * Run after a sync pull, because the duplicates on a device were made before the check
+   * above existed and the server's copy of them arrives with the rest of the catalogue.
+   * The oldest row of each name is the one bills point at, so that is the one kept.
+   */
+  suspend fun mergeDuplicates() {
+    val extras = catalog.duplicateItemIds()
+    if (extras.isNotEmpty()) catalog.deleteItems(extras)
+  }
+
+  /** Takes a sold quantity off the shelf count. See `CatalogDao.reduceStock`. */
+  suspend fun reduceStock(itemId: String, quantityMilli: Long) =
+    catalog.reduceStock(itemId, quantityMilli)
 
   /**
    * Products are retired, not deleted: a bill issued last week still points at one, and

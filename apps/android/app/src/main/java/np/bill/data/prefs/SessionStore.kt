@@ -61,7 +61,13 @@ data class Session(
   val signedIn: Boolean get() = !token.isNullOrEmpty()
   val hasStore: Boolean get() = store != null
 
-  val vatRateBp: Int get() = if (store?.taxpayerType == "vat") store.vatRateBp else 0
+  /** Zero while VAT is switched off, whatever the store row says. See BuildConfig. */
+  val vatRateBp: Int
+    get() = if (np.bill.BuildConfig.VAT_ENABLED && store?.taxpayerType == "vat") {
+      store.vatRateBp
+    } else {
+      0
+    }
 }
 
 /**

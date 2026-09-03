@@ -2,6 +2,9 @@
   "name": "bill",
   "version": "0.0.1",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "type": "module",
   "imports": {
     "#/*": "./src/*"
@@ -31,7 +34,9 @@
     "auth:generate": "vpx auth@latest generate --config ./src/lib/auth/auth.ts --y --output ./src/lib/db/schema/auth.schema.ts",
     "auth:migrate": "vpr auth:generate && vpr db generate && vpr db migrate",
     "skills": "vpx skills@latest",
-    "intent": "vpx @tanstack/intent@latest"
+    "intent": "vpx @tanstack/intent@latest",
+    "change": "changeset",
+    "release:version": "changeset version && node scripts/sync-android-version.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.926.0",
@@ -62,6 +67,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.1",
     "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/devtools-a11y": "0.2.2",

@@ -21,7 +21,7 @@ data class BusinessSettingsState(
   val name: String = "",
   val nameNepali: String = "",
   val pan: String = "",
-  val taxpayerType: String = "vat",
+  val taxpayerType: String = "pan",
   val address: String = "",
   val ward: String = "",
   val municipality: String = "",
@@ -87,6 +87,15 @@ class BusinessSettingsViewModel @Inject constructor(
   }
   fun onFooter(value: String) = edit { it.copy(printFooterNote = value) }
   fun onBankDetails(value: String) = edit { it.copy(bankDetails = value) }
+  /**
+   * Turning VAT on starts charging 13% on every bill, so it is a switch a shop throws
+   * once it actually holds a VAT registration — never a default and never during
+   * sign-up, where it was being answered wrong.
+   */
+  fun onTaxpayerType(value: String) = _state.update {
+    it.copy(taxpayerType = value, cbmsEnabled = if (value == "vat") it.cbmsEnabled else false)
+  }
+
   fun onCbmsEnabled(on: Boolean) = edit { it.copy(cbmsEnabled = on) }
   fun onCbmsUsername(value: String) = edit { it.copy(cbmsUsername = value) }
   fun onCbmsPassword(value: String) = edit { it.copy(cbmsPassword = value) }

@@ -45,6 +45,8 @@ object AppModule {
         BillDatabase.MIGRATION_5_6,
         BillDatabase.MIGRATION_6_7,
         BillDatabase.MIGRATION_7_8,
+        BillDatabase.MIGRATION_8_9,
+        BillDatabase.MIGRATION_9_10,
       )
       .build()
 
@@ -62,6 +64,9 @@ object AppModule {
 
   @Provides
   fun storeDataDao(database: BillDatabase) = database.storeData()
+
+  @Provides
+  fun templateDao(database: BillDatabase) = database.templates()
 
   @Provides
   @Singleton

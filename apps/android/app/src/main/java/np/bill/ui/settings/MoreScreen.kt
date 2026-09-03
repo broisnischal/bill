@@ -12,14 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Computer
-import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import np.bill.ui.theme.BillIcons
 import np.bill.R
 import np.bill.ui.common.Hairline
 import np.bill.ui.common.Panel
@@ -58,10 +51,10 @@ fun MoreScreen(
   ) {
     Panel {
       Entry(
-        icon = Icons.Filled.Schedule,
+        icon = BillIcons.Clock,
         label = stringResource(R.string.dues_title),
         detail = if (duesPaisa > 0) {
-          "Rs ${np.bill.core.money.formatPaisa(duesPaisa)}"
+          "Rs ${np.bill.core.money.formatMoney(duesPaisa)}"
         } else {
           null
         },
@@ -69,7 +62,7 @@ fun MoreScreen(
       )
       Hairline()
       Entry(
-        icon = Icons.Filled.BarChart,
+        icon = BillIcons.ChartColumn,
         label = stringResource(R.string.reports_title),
         onClick = onReports,
       )
@@ -79,25 +72,25 @@ fun MoreScreen(
 
     Panel {
       Entry(
-        icon = Icons.Filled.Storefront,
+        icon = BillIcons.Store,
         label = stringResource(R.string.business_settings),
         onClick = onBusiness,
       )
       Hairline()
       Entry(
-        icon = Icons.Filled.Tune,
+        icon = BillIcons.Settings,
         label = stringResource(R.string.settings),
         onClick = onPreferences,
       )
       Hairline()
       Entry(
-        icon = Icons.Filled.QrCode2,
+        icon = BillIcons.QrCode,
         label = stringResource(R.string.qr_payments),
         onClick = onPaymentQr,
       )
       Hairline()
       Entry(
-        icon = Icons.Filled.Computer,
+        icon = BillIcons.Monitor,
         label = stringResource(R.string.web_login),
         onClick = onWebLogin,
       )
@@ -138,7 +131,7 @@ private fun Entry(
       Spacer(Modifier.width(8.dp))
     }
     Icon(
-      Icons.AutoMirrored.Filled.KeyboardArrowRight,
+      BillIcons.ChevronRight,
       contentDescription = null,
       tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )

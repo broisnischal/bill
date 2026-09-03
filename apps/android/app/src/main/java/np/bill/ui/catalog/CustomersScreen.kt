@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,14 +18,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Contacts
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -45,13 +44,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import np.bill.ui.theme.BillIcons
 import np.bill.R
+import np.bill.ui.common.InitialTile
 import np.bill.ui.common.Hairline
 import np.bill.data.db.CustomerEntity
 import np.bill.device.Contacts
@@ -62,6 +64,7 @@ import np.bill.ui.common.BottomAction
 import np.bill.ui.common.Field
 import np.bill.ui.common.FormSheet
 import np.bill.ui.common.PrimaryButton
+import np.bill.ui.theme.Radius
 import np.bill.ui.common.SearchBar
 import np.bill.ui.common.RomanizedField
 import np.bill.ui.common.SecondaryButton
@@ -142,22 +145,32 @@ fun CustomersScreen(
             },
           ) {
             Icon(
-              Icons.Filled.Contacts,
+              BillIcons.ContactRound,
               contentDescription = stringResource(R.string.import_contacts),
             )
           }
         },
       )
 
+      // The same white ground the other lists stand on, with a rounded head so rows sit
+      // on a surface rather than loose on the page.
+      Box(
+        Modifier
+          .weight(1f)
+          .padding(top = 4.dp)
+          .clip(RoundedCornerShape(topStart = Radius.card, topEnd = Radius.card))
+          .background(MaterialTheme.colorScheme.surface),
+      ) {
       if (customers.isEmpty()) {
-        Box(Modifier.weight(1f)) { EmptyState(stringResource(R.string.no_customers_yet)) }
+        EmptyState(stringResource(R.string.no_customers_yet))
       } else {
-        LazyColumn(Modifier.weight(1f)) {
+        LazyColumn(Modifier.fillMaxSize()) {
           items(customers, key = { it.id }, contentType = { "customer" }) { customer ->
             CustomerRow(customer = customer, onClick = { chosen = customer })
-            Hairline(Modifier.padding(start = 16.dp))
+            Hairline(Modifier.padding(start = 68.dp))
           }
         }
+      }
       }
 
       BottomAction(
@@ -209,6 +222,8 @@ private fun CustomerRow(customer: CustomerEntity, onClick: () -> Unit) {
       .padding(horizontal = 16.dp, vertical = 11.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
+    InitialTile(customer.name)
+    Spacer(Modifier.width(12.dp))
     Column(Modifier.weight(1f)) {
       Text(customer.name, style = MaterialTheme.typography.bodyLarge)
       Text(
@@ -224,7 +239,7 @@ private fun CustomerRow(customer: CustomerEntity, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CustomerSheet(viewModel: CatalogViewModel, onDismiss: () -> Unit) {
+fun CustomerSheet(viewModel: CatalogViewModel, onDismiss: () -> Unit) {
   val form by viewModel.customerForm.collectAsStateWithLifecycle()
   FormSheet(
     title = stringResource(if (form.id == null) R.string.add_customer else R.string.edit_customer),
@@ -319,7 +334,7 @@ private fun ContactImportSheet(viewModel: CatalogViewModel, onDismiss: () -> Uni
         viewModel.loadContacts(it)
       },
       placeholder = { Text(stringResource(R.string.search)) },
-      leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+      leadingIcon = { Icon(BillIcons.Search, contentDescription = null) },
       singleLine = true,
       shape = androidx.compose.foundation.shape.RoundedCornerShape(np.bill.ui.theme.Radius.large),
       modifier = Modifier.fillMaxWidth(),

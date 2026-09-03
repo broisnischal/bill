@@ -22,88 +22,98 @@ import androidx.core.view.WindowCompat
 import np.bill.R
 
 /**
- * The look, taken from Linear.
+ * The look.
  *
- * Four things carry that feel, and none of them is decoration:
+ * Five things carry it, and none of them is decoration:
  *
- *  - **Depth is drawn with borders, not shadows.** Surfaces sit a shade apart and are
- *    separated by a hairline. Nothing floats.
- *  - **Colour is almost absent.** One accent — the blue of the flag's border — used only
- *    where something is actionable; everything else is a true neutral grey. Red is kept
- *    back for things that are actually wrong.
- *  - **Density.** Rows are tight and type is small, because a shopkeeper scanning a day's
- *    bills wants more of them on screen, not more air between them.
- *  - **Inter, tracked tight.** Negative letter-spacing at display sizes, near-zero at
- *    body, which is what stops small text looking loose.
+ *  - **Cards float on a tinted page.** White panels with a large radius sit on an
+ *    off-white ground, separated by a soft shadow rather than a hairline. Nothing is
+ *    boxed in.
+ *  - **No colour, until something means something.** Every surface and every word is
+ *    one of twelve true greys. Green appears on a total that has been settled, red on
+ *    something cancelled, and nowhere else — which is the only reason either registers.
+ *  - **The number is the screen.** Takings are set at display size with the paisa
+ *    dropped to a muted grey, because the rupees are what anyone actually reads.
+ *  - **Round.** Buttons and chips are full pills, cards are 24dp. A shopkeeper's thumb
+ *    is not precise and the shapes should not pretend otherwise.
+ *  - **Geist, tracked tight.** Inter is the safe choice and reads like one; Geist has
+ *    the tighter, more mechanical figures a screen of money wants, and its digits line
+ *    up in a column. Negative letter-spacing at display sizes, near-zero at body.
  *
- * Nepali is not in Inter, so Devanagari falls through to the system's Noto by way of
+ * Nepali is not in Geist, so Devanagari falls through to the system's Noto by way of
  * Android's per-character font fallback. That is the reason the family is declared as a
  * plain FontFamily rather than a locked-down typeface.
  */
 
-private val Inter = FontFamily(
-  Font(R.font.inter_regular, FontWeight.Normal),
-  Font(R.font.inter_medium, FontWeight.Medium),
-  Font(R.font.inter_semibold, FontWeight.SemiBold),
-  Font(R.font.inter_bold, FontWeight.Bold),
+private val Geist = FontFamily(
+  Font(R.font.geist_regular, FontWeight.Normal),
+  Font(R.font.geist_medium, FontWeight.Medium),
+  Font(R.font.geist_semibold, FontWeight.SemiBold),
+  Font(R.font.geist_bold, FontWeight.Bold),
 )
 
-// -- neutrals ------------------------------------------------------------------------
+// -- the ramp ------------------------------------------------------------------------
 //
-// Deliberately free of any colour cast, so the one accent reads as the only colour on
-// the screen rather than as the loudest of several.
+// Twelve steps of true grey, no hue in any of them, from an OKLCH scale so the jumps are
+// even to the eye rather than even in hex. Every surface, border and piece of text in the
+// app is one of these twelve, which is what makes the few places that do carry colour —
+// a red on something cancelled, a green on something settled — impossible to miss.
 
-private val DarkBackground = Color(0xFF0A0A0B)
-private val DarkSurface = Color(0xFF121213)
-private val DarkSurfaceRaised = Color(0xFF171718)
-private val DarkSurfaceHigh = Color(0xFF1D1D1F)
-private val DarkBorder = Color(0xFF262627)
-private val DarkBorderStrong = Color(0xFF343436)
-private val DarkText = Color(0xFFF6F6F6)
-private val DarkTextMuted = Color(0xFF8E8E93)
+private val Grey1 = Color(0xFF0E0E0E)
+private val Grey2 = Color(0xFF151515)
+private val Grey3 = Color(0xFF222222)
+private val Grey4 = Color(0xFF2E2E2E)
+private val Grey5 = Color(0xFF3A3A3A)
+private val Grey7 = Color(0xFF585858)
+private val Grey8 = Color(0xFF717171)
+private val Grey9 = Color(0xFF8F8F8F)
+private val Grey11 = Color(0xFFD2D2D2)
+private val Grey12 = Color(0xFFE9E9E9)
 
-private val LightBackground = Color(0xFFFFFFFF)
-private val LightSurface = Color(0xFFFAFAFA)
-private val LightSurfaceRaised = Color(0xFFF5F5F5)
-private val LightSurfaceHigh = Color(0xFFEFEFEF)
-private val LightBorder = Color(0xFFE4E4E5)
-private val LightBorderStrong = Color(0xFFD2D2D4)
-private val LightText = Color(0xFF0A0A0B)
-private val LightTextMuted = Color(0xFF6E6E73)
+// A card is white and the page behind it is not, which is the whole of the depth model.
+
+private val LightBackground = Color(0xFFF4F4F4)
+private val LightSurface = Color(0xFFFFFFFF)
+private val LightSurfaceRaised = Color(0xFFFFFFFF)
+private val LightSurfaceHigh = Grey12
+private val LightBorder = Grey12
+private val LightBorderStrong = Grey11
+private val LightText = Grey1
+private val LightTextMuted = Grey8
+
+private val DarkBackground = Grey1
+private val DarkSurface = Grey2
+private val DarkSurfaceRaised = Grey3
+private val DarkSurfaceHigh = Grey4
+private val DarkBorder = Grey4
+private val DarkBorderStrong = Grey5
+private val DarkText = Grey12
+private val DarkTextMuted = Grey9
 
 /**
- * The blue from the flag's border.
+ * Money in. The colour of a total that has been settled.
  *
- * It started as the flag's crimson, and that was a mistake: crimson was also the error
- * colour, so "make the bill" and "cancel the bill" were the same shade, and a screen with
- * anything urgent on it read as alarming. Red now means one thing only — something is
- * wrong — and the everyday colour is the calmer half of the same flag.
- *
- * It also stays out of the way of the wallets a shop takes: eSewa is green, Khalti
- * purple, Fonepay red. A blue primary collides with none of them.
+ * One of only three colours in the app, and it never fills anything larger than a word
+ * or a dot. A screen where the accent is everywhere has no accent.
  */
-private val Blue = Color(0xFF1B4D9B)
-private val BlueDark = Color(0xFF7CA6F2)
-private val BlueSoftDark = Color(0xFF11213A)
-private val BlueSoftLight = Color(0xFFE8EFFB)
-
-/** Money in. The colour of a total that has been settled. */
-private val Positive = Color(0xFF1F7A4C)
-private val PositiveDark = Color(0xFF4CC182)
+private val Positive = Color(0xFF1B7F4C)
+private val PositiveDark = Color(0xFF4FC182)
 
 /** Money still owed, and anything the shop should get to soon. Never alarming. */
-private val Warning = Color(0xFF9A6B00)
+private val Warning = Color(0xFF8A6B12)
 private val WarningDark = Color(0xFFE0A800)
 
 /** Reserved. Nothing routine is ever this colour. */
 private val Negative = Color(0xFFC0392B)
-private val NegativeDark = Color(0xFFFF6B5E)
+private val NegativeDark = Color(0xFFFF7A6E)
+private val NegativeTint = Color(0xFFF4DBD8)
+private val NegativeTintDark = Color(0xFF33201E)
 
 private val DarkColors = darkColorScheme(
-  primary = BlueDark,
-  onPrimary = Color(0xFF06152B),
-  primaryContainer = BlueSoftDark,
-  onPrimaryContainer = Color(0xFFCFDFFB),
+  primary = Grey12,
+  onPrimary = Grey1,
+  primaryContainer = Grey3,
+  onPrimaryContainer = Grey12,
   secondary = DarkTextMuted,
   onSecondary = DarkBackground,
   secondaryContainer = DarkSurfaceHigh,
@@ -119,7 +129,7 @@ private val DarkColors = darkColorScheme(
   surfaceContainerLow = DarkSurface,
   surfaceContainer = DarkSurfaceRaised,
   surfaceContainerHigh = DarkSurfaceHigh,
-  surfaceContainerHighest = Color(0xFF1F2023),
+  surfaceContainerHighest = Grey5,
   error = NegativeDark,
   onError = Color(0xFF3A0A05),
   errorContainer = Color(0xFF3A1512),
@@ -130,10 +140,10 @@ private val DarkColors = darkColorScheme(
 )
 
 private val LightColors = lightColorScheme(
-  primary = Blue,
+  primary = Grey1,
   onPrimary = Color.White,
-  primaryContainer = BlueSoftLight,
-  onPrimaryContainer = Color(0xFF0C2A57),
+  primaryContainer = Grey12,
+  onPrimaryContainer = Grey1,
   secondary = LightTextMuted,
   onSecondary = Color.White,
   secondaryContainer = LightSurfaceHigh,
@@ -149,7 +159,7 @@ private val LightColors = lightColorScheme(
   surfaceContainerLow = LightSurface,
   surfaceContainer = LightSurfaceRaised,
   surfaceContainerHigh = LightSurfaceHigh,
-  surfaceContainerHighest = Color(0xFFEAEAEB),
+  surfaceContainerHighest = Grey11,
   error = Negative,
   onError = Color.White,
   errorContainer = Color(0xFFFDECEA),
@@ -160,25 +170,45 @@ private val LightColors = lightColorScheme(
 )
 
 /**
- * Tight tracking at the top, neutral at the bottom. The negative letter-spacing on the
+ * Tight tracking at the top, neutral at the bottom, and tabular figures throughout.
+ *
+ * `tnum` is what makes a column of totals readable: with proportional digits a 1 is
+ * narrower than a 7, so Rs 1,111.00 and Rs 7,777.00 do not line up and the eye cannot
+ * compare them down a list. Geist carries the feature; every style here asks for it.
+ * The negative letter-spacing on the
  * large sizes is most of what makes a heading look drawn rather than typed.
  */
+private fun geist(
+  size: Int,
+  line: Int,
+  weight: FontWeight = FontWeight.Normal,
+  tracking: Float = 0f,
+) = TextStyle(
+  fontFamily = Geist,
+  fontSize = size.sp,
+  lineHeight = line.sp,
+  fontWeight = weight,
+  letterSpacing = tracking.sp,
+  // Tabular figures, on every style. See the note above.
+  fontFeatureSettings = "tnum",
+)
+
 private val BillTypography = Typography(
-  displayLarge = TextStyle(fontFamily = Inter, fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp),
-  displayMedium = TextStyle(fontFamily = Inter, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.6).sp),
-  displaySmall = TextStyle(fontFamily = Inter, fontSize = 24.sp, lineHeight = 30.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.5).sp),
-  headlineLarge = TextStyle(fontFamily = Inter, fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.4).sp),
-  headlineMedium = TextStyle(fontFamily = Inter, fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.3).sp),
-  headlineSmall = TextStyle(fontFamily = Inter, fontSize = 17.sp, lineHeight = 23.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
-  titleLarge = TextStyle(fontFamily = Inter, fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.2).sp),
-  titleMedium = TextStyle(fontFamily = Inter, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.1).sp),
-  titleSmall = TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
-  bodyLarge = TextStyle(fontFamily = Inter, fontSize = 15.sp, lineHeight = 21.sp, letterSpacing = (-0.1).sp),
-  bodyMedium = TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 19.sp),
-  bodySmall = TextStyle(fontFamily = Inter, fontSize = 12.sp, lineHeight = 16.sp),
-  labelLarge = TextStyle(fontFamily = Inter, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.1).sp),
-  labelMedium = TextStyle(fontFamily = Inter, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
-  labelSmall = TextStyle(fontFamily = Inter, fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.2.sp),
+  displayLarge = geist(40, 44, FontWeight.SemiBold, -1.4f),
+  displayMedium = geist(32, 38, FontWeight.SemiBold, -1.0f),
+  displaySmall = geist(26, 32, FontWeight.SemiBold, -0.6f),
+  headlineLarge = geist(22, 28, FontWeight.SemiBold, -0.4f),
+  headlineMedium = geist(19, 25, FontWeight.SemiBold, -0.3f),
+  headlineSmall = geist(17, 23, FontWeight.SemiBold, -0.2f),
+  titleLarge = geist(16, 22, FontWeight.Medium, -0.2f),
+  titleMedium = geist(14, 20, FontWeight.Medium, -0.1f),
+  titleSmall = geist(13, 18, FontWeight.Medium),
+  bodyLarge = geist(15, 21, tracking = -0.1f),
+  bodyMedium = geist(13, 19),
+  bodySmall = geist(12, 16),
+  labelLarge = geist(14, 18, FontWeight.Medium, -0.1f),
+  labelMedium = geist(12, 16, FontWeight.Medium),
+  labelSmall = geist(11, 14, FontWeight.Medium, 0.2f),
 )
 
 /** What the app draws with beyond Material's own tokens. */
@@ -190,23 +220,86 @@ data class BillTokens(
   val negative: Color,
   /** Money owed. Distinct from an error: a due is normal, it just is not settled. */
   val due: Color,
+  /** Fill for the small square behind an icon, and for a pill around a number. */
+  val mint: Color,
+  /** What is legible on that fill. */
+  val onMint: Color,
+  /** The same idea for something that went the other way. */
+  val negativeTint: Color,
+  /** What marks the one thing you are on. Ink, so nothing has to compete with it. */
+  val accent: Color,
+  /** Filled actions, and the colour a screen's heading is set in. */
+  val ink: Color,
+  val onInk: Color,
+  /** The top of the gradient a screen's head fades out of. */
+  val sage: Color,
+  /** What a card casts. Soft and low, never a drop shadow you can name. */
+  val shadow: Color,
   val isDark: Boolean,
 )
 
 val LocalTokens = staticCompositionLocalOf {
-  BillTokens(DarkBorder, DarkBorderStrong, PositiveDark, WarningDark, NegativeDark, WarningDark, isDark = true)
+  BillTokens(
+    border = DarkBorder,
+    borderStrong = DarkBorderStrong,
+    positive = PositiveDark,
+    warning = WarningDark,
+    negative = NegativeDark,
+    due = WarningDark,
+    mint = Grey3,
+    onMint = Grey12,
+    negativeTint = NegativeTintDark,
+    accent = Grey12,
+    ink = Grey12,
+    onInk = Grey1,
+    sage = Grey2,
+    shadow = Color(0x66000000),
+    isDark = true,
+  )
 }
 
-/** Small radii. Linear's corners are barely rounded; anything softer reads as a toy. */
+/**
+ * Round, and deliberately so.
+ *
+ * The corners were 4dp when the app was built to look like a desktop tool. Everything a
+ * thumb touches is a pill now and a card is 24dp, which is the single change that most
+ * separates something made for a phone from something ported onto one.
+ */
 object Radius {
-  val small = 4.dp
-  val medium = 6.dp
-  val large = 8.dp
-  val sheet = 12.dp
+  /** A mark inside a pill: a brand logo on a payment chip. */
+  val small = 8.dp
+
+  /** The tinted square behind an icon. */
+  val medium = 12.dp
+
+  /** A field, and any surface nested inside a card. */
+  val large = 16.dp
+
+  /** A floating bar whose contents are pills inset by 6dp: 10 + 6 rounds to this. */
+  val bar = 20.dp
+
+  /** A card. */
+  val card = 24.dp
+
+  /** A sheet's top corners. */
+  val sheet = 28.dp
+
+  val pill = 999.dp
 }
 
 /** A thumb at a counter is not precise, so nothing tappable is smaller than this. */
 val TouchTarget = 44.dp
+
+/** What a screen's own action stands at. Taller than a row, and always a pill. */
+val ActionHeight = 54.dp
+
+/**
+ * The margin every screen keeps from the edge of the phone.
+ *
+ * One number, because the screens used four between them — 12, 14, 16 and 20 — and
+ * moving between tabs made the app look assembled from parts.
+ */
+val Gutter = 14.dp
 
 /** What the person chose in settings, against what the system is doing. */
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
@@ -230,6 +323,16 @@ fun BillTheme(
     warning = if (dark) WarningDark else Warning,
     negative = if (dark) NegativeDark else Negative,
     due = if (dark) WarningDark else Warning,
+    mint = if (dark) Grey3 else Grey12,
+    onMint = if (dark) Grey12 else Grey1,
+    negativeTint = if (dark) NegativeTintDark else NegativeTint,
+    accent = if (dark) Grey12 else Grey1,
+    ink = if (dark) Grey12 else Grey1,
+    onInk = if (dark) Grey1 else Color.White,
+    sage = if (dark) Grey2 else Grey12,
+    // Cast by a white card onto an off-white page, so it has to be soft or it reads as
+    // a border that someone forgot to align.
+    shadow = if (dark) Color(0x99000000) else Color(0x1A101010),
     isDark = dark,
   )
 

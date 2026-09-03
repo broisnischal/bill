@@ -36,6 +36,28 @@ export const Route = createFileRoute("/api/v1/catalog")({
               if (!updated) throw new ApiError(404, "not_found", "That item is not in this store");
               return json({ item: updated });
             }
+            /**
+             * A name this store already sells is that product.
+             *
+             * A till that typed the name onto a bill rather than picking it sends a
+             * fresh id, and inserting on that id gave the shop a second "Masu" at the
+             * same price on every bill. Matched on the name instead, which is the thing
+             * a shopkeeper considers unique.
+             */
+            const [byName] = await db
+              .select()
+              .from(item)
+              .where(and(eq(item.storeId, storeId), eq(item.name, values.name)));
+
+            if (byName) {
+              const [merged] = await db
+                .update(item)
+                .set(values)
+                .where(eq(item.id, byName.id))
+                .returning();
+              return json({ item: merged });
+            }
+
             const [created] = await db
               .insert(item)
               .values({ ...values, storeId })

@@ -65,9 +65,32 @@ export const Route = createFileRoute("/api/v1/sync")({
           const body = await parseBody(request, syncRequestSchema);
           const now = new Date();
 
+          /**
+           * A business under review syncs, but does not bill.
+           *
+           * The endpoint stays open on purpose: this is how a till learns it has been
+           * approved, and how it pulls the products and buyers the shop is setting up
+           * while it waits. What it does not get is numbers, and any bill it sends is
+           * refused with a reason rather than silently dropped.
+           */
+          const approved = context.store.status === "approved";
+          const heldReason =
+            context.store.status === "rejected"
+              ? (context.store.reviewNote ??
+                "The business was not approved. Send what was asked for again.")
+              : "The business is still being reviewed. Billing opens once it is approved.";
+
           // Bills first: a cancellation in the same batch may be aimed at one of them.
           const results = [];
           for (const input of body.invoices) {
+            if (!approved) {
+              results.push({
+                id: input.id,
+                status: "rejected" as const,
+                error: { code: "store_not_approved", message: heldReason },
+              });
+              continue;
+            }
             try {
               const { invoice, filed } = await createLeasedInvoice({
                 store: context.store,
@@ -151,7 +174,7 @@ export const Route = createFileRoute("/api/v1/sync")({
 
           // Top up numbers only after the used ones are filed, so the watermark is current.
           const fiscalYear = fiscalYearFor(now);
-          const wanted = body.want ?? { tax_invoice: LEASE_LOW_WATER };
+          const wanted = approved ? (body.want ?? { tax_invoice: LEASE_LOW_WATER }) : {};
           const leases = [];
           for (const [type, want] of Object.entries(wanted)) {
             if (!want) continue;
@@ -195,6 +218,11 @@ export const Route = createFileRoute("/api/v1/sync")({
             cancellations,
             leases,
             catalog: { items, customers },
+            /** Where review has got to, so a till can put itself behind the gate. */
+            review: {
+              status: context.store.status,
+              note: context.store.reviewNote,
+            },
             // Settings changed in the browser reach the till on its next sync.
             store: context.store,
           });

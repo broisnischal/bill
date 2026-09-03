@@ -116,8 +116,10 @@ class ReceiptRenderer(private val paperWidthPx: Int = 576) {
     centred(
       when (bill.invoiceType) {
         "credit_note" -> "CREDIT NOTE"
-        "abbreviated_tax_invoice" -> "ABBREVIATED TAX INVOICE"
-        else -> "TAX INVOICE"
+        "abbreviated_tax_invoice" ->
+          if (seller.vatRegistered) "ABBREVIATED TAX INVOICE" else "ABBREVIATED INVOICE"
+        // Not a tax invoice unless the shop is registered to charge tax.
+        else -> if (seller.vatRegistered) "TAX INVOICE" else "INVOICE"
       },
       heading,
       24f,
@@ -125,8 +127,9 @@ class ReceiptRenderer(private val paperWidthPx: Int = 576) {
     centred(
       when (bill.invoiceType) {
         "credit_note" -> "क्रेडिट नोट"
-        "abbreviated_tax_invoice" -> "संक्षिप्त कर बीजक"
-        else -> "कर बीजक"
+        "abbreviated_tax_invoice" ->
+          if (seller.vatRegistered) "संक्षिप्त कर बीजक" else "संक्षिप्त बीजक"
+        else -> if (seller.vatRegistered) "कर बीजक" else "बीजक"
       },
       smallCentre,
       26f,
