@@ -174,7 +174,7 @@
     <string name="filter_all">All</string>
     <string name="filter_active">Active</string>
     <string name="filter_cancelled">Cancelled</string>
-    <string name="filter_unsynced">Not synced</string>
+    <string name="filter_unsynced">Unsynced</string>
     <string name="filter_from">From</string>
     <string name="filter_to">To</string>
     <string name="clear_filters">Clear</string>
@@ -357,8 +357,8 @@
 
     <string name="preview_title">Check the bill</string>
     <string name="preview_subtitle">Once it is made it cannot be edited, only reversed with a credit note.</string>
-    <string name="preview_confirm">Yes, make the bill</string>
-    <string name="preview_back">Change something</string>
+    <string name="preview_confirm">Make the bill</string>
+    <string name="preview_back">Back</string>
     <string name="preview_for">For %1$s</string>
 
 
@@ -377,6 +377,8 @@
     <string name="credit_paid_on">Rs %1$s, paid</string>
     <string name="credit_mark_paid">They paid</string>
     <string name="credit_reopen">Still owed</string>
+
+    <string name="keep">Keep</string>
 
     <!-- Bill templates -->
     <string name="template_empty">Nothing on this bill to save.</string>

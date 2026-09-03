@@ -51,7 +51,9 @@ import np.bill.ui.common.DeltaPill
 import np.bill.ui.common.MoneyDisplay
 import np.bill.ui.common.EmptyState
 import np.bill.ui.common.Panel
+import np.bill.ui.theme.Gutter
 import np.bill.ui.theme.Radius
+import np.bill.ui.common.SegmentedChoice
 import np.bill.ui.common.SearchBar
 import np.bill.ui.common.Notice
 import np.bill.ui.common.NoticeTone
@@ -143,73 +145,56 @@ fun BillsScreen(
     )
 
     AnimatedVisibility(visible = showFilters) {
-      // One panel rather than three loose rows. Filters are a single question about the
-      // list below them, and laid out flat they read as unrelated controls that happen
-      // to sit near each other.
-      Panel(Modifier.padding(horizontal = 12.dp, vertical = 2.dp)) {
-        Column(Modifier.padding(14.dp)) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
+      // No panel around it. It was a bordered box inside the page's own box, with four
+      // chips wide enough that the fourth ran off the screen and two date fields the
+      // size of text areas. Filters are a strip under the search, not a card.
+      Column(Modifier.padding(horizontal = Gutter, vertical = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text(
+            stringResource(R.string.filters),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+          )
+          if (filters.isActive) {
             Text(
-              stringResource(R.string.filters),
-              style = MaterialTheme.typography.labelMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.weight(1f),
-            )
-            // Only offered once there is something to clear, so the row is not carrying
-            // a permanently dead control.
-            if (filters.isActive) {
-              Text(
-                stringResource(R.string.clear_filters),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                  .clickable(onClick = viewModel::clearFilters)
-                  .padding(horizontal = 6.dp, vertical = 2.dp),
-              )
-            }
-          }
-
-          Spacer(Modifier.height(10.dp))
-          Row(
-            Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-          ) {
-            for (status in BillStatusFilter.entries) {
-              ChoiceChip(
-                text = stringResource(status.labelRes),
-                selected = filters.status == status,
-                onClick = { viewModel.onStatusFilter(status) },
-              )
-            }
-          }
-
-          Spacer(Modifier.height(12.dp))
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            BsDateField(
-              value = filters.fromMiti.orEmpty(),
-              onValueChange = viewModel::onFromMiti,
-              label = stringResource(R.string.filter_from),
-              modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.width(10.dp))
-            BsDateField(
-              value = filters.toMiti.orEmpty(),
-              onValueChange = viewModel::onToMiti,
-              label = stringResource(R.string.filter_to),
-              modifier = Modifier.weight(1f),
+              stringResource(R.string.clear_filters),
+              style = MaterialTheme.typography.labelLarge,
+              color = MaterialTheme.colorScheme.primary,
+              modifier = Modifier
+                .clip(RoundedCornerShape(Radius.pill))
+                .clickable(onClick = viewModel::clearFilters)
+                .padding(horizontal = 6.dp, vertical = 2.dp),
             )
           }
         }
-      }
-    }
 
-    if (filters.isActive) {
-      Text(
-        stringResource(R.string.showing_count, state.visible.size, formatMoney(state.visiblePaisa)),
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
-      )
+        Spacer(Modifier.height(8.dp))
+        // One control with four equal slots, so nothing overflows and the answer to
+        // "which of these" reads as one question.
+        SegmentedChoice(
+          options = BillStatusFilter.entries.map { it to stringResource(it.labelRes) },
+          selected = filters.status,
+          onSelect = viewModel::onStatusFilter,
+        )
+
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          BsDateField(
+            value = filters.fromMiti.orEmpty(),
+            onValueChange = viewModel::onFromMiti,
+            label = stringResource(R.string.filter_from),
+            modifier = Modifier.weight(1f),
+          )
+          Spacer(Modifier.width(10.dp))
+          BsDateField(
+            value = filters.toMiti.orEmpty(),
+            onValueChange = viewModel::onToMiti,
+            label = stringResource(R.string.filter_to),
+            modifier = Modifier.weight(1f),
+          )
+        }
+      }
     }
 
     Box(

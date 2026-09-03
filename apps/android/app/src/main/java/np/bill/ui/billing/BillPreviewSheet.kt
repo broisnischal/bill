@@ -62,7 +62,7 @@ fun BillPreviewSheet(
           onClick = onConfirm,
           enabled = state.canSave,
           loading = state.saving,
-          modifier = Modifier.weight(1.3f),
+          modifier = Modifier.weight(1f),
         )
       }
     },

@@ -167,14 +167,6 @@ fun BillDetailScreen(
           )
         }
 
-        // Directly under Print, because this is the moment a shop knows the basket
-        // repeats — not at the bottom of the totals, where it was and where nobody
-        // scrolled to find it.
-        Spacer(Modifier.height(10.dp))
-        SecondaryButton(
-          text = stringResource(R.string.template_save),
-          onClick = { naming = true },
-        )
 
         state.message?.let {
           Spacer(Modifier.height(12.dp))
@@ -236,12 +228,23 @@ fun BillDetailScreen(
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
+        // The two afterthoughts, small and side by side. Neither is what the screen is
+        // for, and a full-width button says otherwise.
         Spacer(Modifier.height(28.dp))
-        if (bill.status != "cancelled") {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
           SecondaryButton(
-            text = stringResource(R.string.cancel_bill),
-            onClick = { cancelling = true },
+            text = stringResource(R.string.template_save),
+            onClick = { naming = true },
+            compact = true,
           )
+          if (bill.status != "cancelled") {
+            SecondaryButton(
+              text = stringResource(R.string.cancel_bill),
+              onClick = { cancelling = true },
+              destructive = true,
+              compact = true,
+            )
+          }
         }
 
 
@@ -384,12 +387,12 @@ private fun CancelBillSheet(
       Spacer(Modifier.height(20.dp))
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         SecondaryButton(
-          text = stringResource(R.string.cancel_keep),
+          text = stringResource(R.string.keep),
           onClick = onDismiss,
           modifier = Modifier.weight(1f),
         )
         DangerButton(
-          text = stringResource(R.string.cancel_bill_confirm),
+          text = stringResource(R.string.cancel),
           onClick = onConfirm,
           enabled = reason.trim().length >= 5,
           modifier = Modifier.weight(1f),

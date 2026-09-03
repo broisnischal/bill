@@ -160,7 +160,7 @@
     <string name="filter_all">सबै</string>
     <string name="filter_active">सक्रिय</string>
     <string name="filter_cancelled">रद्द</string>
-    <string name="filter_unsynced">सिंक नभएको</string>
+    <string name="filter_unsynced">नपठाएको</string>
     <string name="filter_from">देखि</string>
     <string name="filter_to">सम्म</string>
     <string name="clear_filters">हटाउनुहोस्</string>
@@ -310,8 +310,8 @@
 
     <string name="preview_title">बिल जाँच्नुहोस्</string>
     <string name="preview_subtitle">एकपटक बनेपछि सम्पादन हुँदैन, क्रेडिट नोटले मात्र उल्टाउन सकिन्छ।</string>
-    <string name="preview_confirm">हो, बिल बनाउनुहोस्</string>
-    <string name="preview_back">केही बदल्नुहोस्</string>
+    <string name="preview_confirm">बिल बनाउनुहोस्</string>
+    <string name="preview_back">पछाडि</string>
     <string name="preview_for">%1$s को नाममा</string>
 
 
@@ -330,6 +330,8 @@
     <string name="credit_paid_on">Rs %1$s, तिरिसकेको</string>
     <string name="credit_mark_paid">तिरे</string>
     <string name="credit_reopen">अझै बाँकी</string>
+
+    <string name="keep">राख्ने</string>
 
     <!-- Bill templates -->
     <string name="template_empty">यो बिलमा सुरक्षित गर्ने कुरा छैन।</string>

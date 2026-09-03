@@ -232,6 +232,6 @@ data class ShellTab(
 
 /** Tall enough that the card under it has something behind it, short enough to be a hint. */
 private val GradientHeight = 210.dp
-private val NavPill = 40.dp
-private val NavPillHeight = 28.dp
+private val NavPill = 46.dp
+private val NavPillHeight = 30.dp
 private val NavIcon = 20.dp

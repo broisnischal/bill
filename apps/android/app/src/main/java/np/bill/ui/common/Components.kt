@@ -118,7 +118,9 @@ fun PrimaryButton(
         Icon(it, contentDescription = null, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(8.dp))
       }
-      Text(text, style = MaterialTheme.typography.titleLarge)
+      // One line, always. A label that wraps makes its pill taller than the one beside
+      // it, which is what had the two actions on the preview sheet at different heights.
+      Text(text, style = MaterialTheme.typography.titleLarge, maxLines = 1)
     }
   }
 }
@@ -130,6 +132,13 @@ fun SecondaryButton(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   destructive: Boolean = false,
+  /**
+   * Sized to its label instead of the screen.
+   *
+   * For the afterthoughts at the foot of a screen — save this as a template, cancel this
+   * bill — which are not what the screen is for and should not look like it.
+   */
+  compact: Boolean = false,
 ) {
   val tokens = LocalTokens.current
   val interaction = remember { MutableInteractionSource() }
@@ -137,15 +146,29 @@ fun SecondaryButton(
     onClick = onClick,
     interactionSource = interaction,
     enabled = enabled,
-    modifier = modifier.pressScale(interaction).fillMaxWidth().heightIn(min = ActionHeight),
+    modifier = modifier
+      .pressScale(interaction)
+      .then(if (compact) Modifier else Modifier.fillMaxWidth())
+      .heightIn(min = if (compact) 42.dp else ActionHeight),
     shape = RoundedCornerShape(Radius.pill),
     border = BorderStroke(1.dp, tokens.borderStrong),
     colors = ButtonDefaults.buttonColors(
       containerColor = MaterialTheme.colorScheme.surface,
       contentColor = if (destructive) tokens.negative else MaterialTheme.colorScheme.onSurface,
     ),
+    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+      horizontal = if (compact) 18.dp else 20.dp,
+    ),
   ) {
-    Text(text, style = MaterialTheme.typography.titleLarge)
+    Text(
+      text,
+      style = if (compact) {
+        MaterialTheme.typography.labelLarge
+      } else {
+        MaterialTheme.typography.titleLarge
+      },
+      maxLines = 1,
+    )
   }
 }
 
