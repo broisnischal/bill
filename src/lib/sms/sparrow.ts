@@ -11,6 +11,9 @@ import { recordDevSms } from "./dev-inbox";
  * Without a token configured the code is logged instead of sent, which is how local
  * development and the e2e run get through signup with no gateway.
  */
+/** True when there is an account to send through. Without it Sparrow is skipped. */
+export const sparrowConfigured = Boolean(env.SPARROW_SMS_TOKEN);
+
 export async function sendSms({ to, text }: { to: string; text: string }) {
   if (!env.SPARROW_SMS_TOKEN) {
     // No gateway account: the message goes to the console and to the dev inbox, which is

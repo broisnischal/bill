@@ -4,7 +4,7 @@
 
     <!-- Sign in -->
     <string name="sign_in_title">Your mobile number</string>
-    <string name="sign_in_subtitle">We send a code by SMS. No password to remember.</string>
+    <string name="sign_in_subtitle">We send a code on WhatsApp. No password to remember.</string>
     <string name="phone_label">Mobile number</string>
     <string name="phone_hint">98XXXXXXXX</string>
     <string name="send_code">Send code</string>
@@ -12,7 +12,7 @@
     <string name="otp_title">Enter the code</string>
     <string name="otp_subtitle">Sent to %1$s</string>
     <string name="otp_label">6-digit code</string>
-    <string name="dev_code_filled">Filled in from your local server. No SMS was sent.</string>
+    <string name="dev_code_filled">Filled in from the server. The WhatsApp message did not go out.</string>
     <string name="verify">Verify</string>
     <string name="resend_code">Send it again</string>
     <string name="change_number">Change number</string>
@@ -315,7 +315,7 @@
     <string name="taxpayer_pan_note">Bills carry your PAN and no tax. This is what most shops need.</string>
     <string name="taxpayer_vat_note">Bills charge 13% VAT and print as a tax invoice. Only turn this on if the IRD has registered this PAN for VAT.</string>
 
-    <string name="sign_in_offline">No connection. Signing in needs the internet for one moment — the code comes by SMS.</string>
+    <string name="sign_in_offline">No connection. Signing in needs the internet for one moment, and the code comes on WhatsApp.</string>
     <string name="otp_offline">No connection. The code cannot be checked without the internet.</string>
 
     <string name="step_name_title">What is the shop called?</string>

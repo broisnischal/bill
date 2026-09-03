@@ -8,7 +8,7 @@ import { env } from "#/env/server.ts";
 import { db } from "#/lib/db/index.ts";
 import * as schema from "#/lib/db/schema/index.ts";
 import { normalizeNepaliMobile } from "#/lib/nepali/validators.ts";
-import { sendSms } from "#/lib/sms/sparrow.ts";
+import { deliverOtp } from "#/lib/sms/otp.ts";
 
 export const auth = betterAuth({
   baseURL: env.VITE_BASE_URL,
@@ -38,10 +38,10 @@ export const auth = betterAuth({
       requireVerification: true,
       expiresIn: 5 * 60,
       sendOTP: async ({ phoneNumber: to, code }) => {
-        await sendSms({
-          to,
-          text: `${code} is your Bill verification code. It expires in 5 minutes.`,
-        });
+        // WhatsApp, then SMS, then held for the allowlisted debug route. Never throws:
+        // a dead WhatsApp session must not stop a shopkeeper reaching the code screen,
+        // because the code may still be readable to them.
+        await deliverOtp({ to, code });
       },
       // Verifying an unknown number creates the account, so there is no separate signup
       // step. The placeholder email exists only because the user table requires one.

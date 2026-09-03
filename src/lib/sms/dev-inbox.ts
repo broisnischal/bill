@@ -17,8 +17,17 @@ import { devSmsCode } from "#/lib/db/schema/index.ts";
 /** Codes are short-lived anyway; this only stops the table growing without bound. */
 const TTL_MS = 10 * 60 * 1000;
 
-/** True when there is no gateway to send through and the deployment asked for the inbox. */
-export const devInboxEnabled = !env.SPARROW_SMS_TOKEN && env.OTP_DEBUG;
+/**
+ * True when the deployment asked for the inbox.
+ *
+ * This used to also require that no SMS gateway was configured, on the reasoning that a
+ * deployment able to send had no business making codes readable. That reasoning does not
+ * survive WhatsApp being the channel: the gateway can be configured and perfectly
+ * healthy right up until a laptop lid closes, and that is exactly when the way in is
+ * needed. The allowlist below is the control, and it always was: an empty list means
+ * nobody no matter what else is set.
+ */
+export const devInboxEnabled = env.OTP_DEBUG;
 
 /**
  * Whose code may be read back, and nobody else's.

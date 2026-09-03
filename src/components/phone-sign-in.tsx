@@ -14,7 +14,7 @@ import { normalizeNepaliMobile } from "#/lib/nepali/validators.ts";
  *
  * A Nepali shopkeeper has a mobile number long before they have an email they check, so
  * the number is the account. Two ways in, and the second is the one most people will use:
- * either a code by SMS, or — if the app is already open on the phone in their pocket —
+ * either a code on WhatsApp, or (if the app is already open on the phone in their pocket)
  * a code shown here that they type into it, which costs nothing and does not wait on a
  * network.
  */
@@ -25,7 +25,7 @@ export function PhoneSignIn() {
     <div className="flex flex-col gap-4">
       <div className="flex gap-2 rounded-lg border border-border bg-muted/40 p-1">
         <TabButton active={mode === "phone"} onClick={() => setMode("phone")}>
-          Get a code by SMS
+          Get a code on WhatsApp
         </TabButton>
         <TabButton active={mode === "device"} onClick={() => setMode("device")}>
           Use my phone
@@ -59,7 +59,7 @@ function TabButton({
   );
 }
 
-/** The ordinary route: a number, then the six digits that arrive by SMS. */
+/** The ordinary route: a number, then the six digits that arrive on WhatsApp. */
 function SmsSignIn() {
   const [phone, setPhone] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);

@@ -32,6 +32,18 @@ export const env = createEnv({
       .default("false")
       .transform((value) => value === "true"),
     /**
+     * WhatsApp, through an OpenWA server, which is the channel a code actually goes out
+     * on. All three are needed before anything is sent.
+     *
+     * The base URL is a Cloudflare tunnel to somebody's own machine rather than a
+     * gateway with an SLA, so treat a failure to send as normal and not exceptional:
+     * see src/lib/sms/openwa.ts.
+     */
+    OPENWA_BASE_URL: z.string().optional(),
+    OPENWA_API_KEY: z.string().optional(),
+    OPENWA_SESSION_ID: z.string().optional(),
+
+    /**
      * Whose code the debug route will hand back, comma separated, E.164.
      *
      * Empty means nobody, which is what a deployment that forgot to set it should get.
