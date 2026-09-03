@@ -167,75 +167,71 @@ private fun FloatingNav(
   // and it sits 6dp in from the edge of the bar. 22 + 6 is Radius.bar.
   val shape = RoundedCornerShape(Radius.bar)
 
-  Row(
+  // The bar hugs its contents and centres itself, rather than stretching the width and
+  // distributing the slack. Spread across a full-width row the gaps were whatever was
+  // left over; here every gap is the same 4dp and the outermost circles sit exactly 6dp
+  // from the ends, which is the same 6dp as top and bottom.
+  Box(
     Modifier
       .fillMaxWidth()
       .navigationBarsPadding()
-      .padding(horizontal = Gutter, vertical = 8.dp)
-      .shadow(
-        elevation = if (tokens.isDark) 0.dp else 14.dp,
-        shape = shape,
-        ambientColor = tokens.shadow,
-        spotColor = tokens.shadow,
-      )
-      .clip(shape)
-      // No outline. The bar sat on a near-black page with a hairline round it, and a ring
-      // that thin at that radius reads as a seam rather than an edge. One shade up from
-      // the page separates it, which is how every other surface here does it.
-      .background(
-        if (tokens.isDark) {
-          MaterialTheme.colorScheme.surfaceContainerHigh
-        } else {
-          MaterialTheme.colorScheme.surface
-        },
-      )
-      .padding(6.dp),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically,
+      .padding(horizontal = Gutter, vertical = 8.dp),
+    contentAlignment = Alignment.Center,
   ) {
-    /**
-     * The tabs in two groups with the payment code between them.
-     *
-     * Taking money is not a place in the app, it is the thing a shopkeeper does with a
-     * customer standing there, so it sits where a thumb already rests rather than on a
-     * screen they have to be on first. Two groups each taking half the width put it dead
-     * centre whichever way the tabs divide.
-     */
-    val half = tabs.size / 2
-
     Row(
-      Modifier.weight(1f),
-      horizontalArrangement = Arrangement.SpaceEvenly,
+      Modifier
+        .shadow(
+          elevation = if (tokens.isDark) 0.dp else 14.dp,
+          shape = shape,
+          ambientColor = tokens.shadow,
+          spotColor = tokens.shadow,
+        )
+        .clip(shape)
+        // Dark mode separates by value, not by outline: a hairline that thin at this
+        // radius reads as a seam rather than an edge.
+        .background(
+          if (tokens.isDark) {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+          } else {
+            MaterialTheme.colorScheme.surface
+          },
+        )
+        .padding(6.dp),
+      horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
+      /**
+       * The payment code sits among the tabs, not on top of them.
+       *
+       * Taking money is not a place in the app — it is what a shopkeeper does with a
+       * customer in front of them — so it lives where a thumb already rests. It carries
+       * no background: filled, it looked permanently selected, because the colour that
+       * marks the chosen tab is near-white in the dark and there is only one of those.
+       * The green says action instead.
+       */
+      val half = tabs.size / 2
+
       for (tab in tabs.take(half)) {
         NavCircle(tab = tab, active = tab.route == selectedRoute, onSelect = onSelect)
       }
-    }
 
-    onShowQr?.let { show ->
-      Box(
-        Modifier
-          .size(NavItem)
-          .clip(CircleShape)
-          .background(tokens.accent)
-          .clickable(onClick = show),
-        contentAlignment = Alignment.Center,
-      ) {
-        Icon(
-          BillIcons.QrCode,
-          contentDescription = stringResource(R.string.qr_show),
-          tint = tokens.onInk,
-          modifier = Modifier.size(NavIcon),
-        )
+      onShowQr?.let { show ->
+        Box(
+          Modifier
+            .size(NavItem)
+            .clip(CircleShape)
+            .clickable(onClick = show),
+          contentAlignment = Alignment.Center,
+        ) {
+          Icon(
+            BillIcons.QrCode,
+            contentDescription = stringResource(R.string.qr_show),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(NavIcon),
+          )
+        }
       }
-    }
 
-    Row(
-      Modifier.weight(1f),
-      horizontalArrangement = Arrangement.SpaceEvenly,
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
       for (tab in tabs.drop(half)) {
         NavCircle(tab = tab, active = tab.route == selectedRoute, onSelect = onSelect)
       }
