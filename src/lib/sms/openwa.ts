@@ -30,6 +30,16 @@ export const openWaConfigured = Boolean(
  */
 const TIMEOUT_MS = 8000;
 
+/**
+ * How long to wait for a revived session, as polls of a fixed gap.
+ *
+ * Four polls three seconds apart, so twelve seconds at worst and usually much less. That
+ * is a long time at a counter, which is why it only ever happens on the path where the
+ * alternative is not delivering at all.
+ */
+const REVIVE_POLLS = 4;
+const REVIVE_POLL_MS = 3000;
+
 /** Why a send did not happen, for a log that has to be readable at a counter. */
 export type WhatsAppFailure =
   | { kind: "unconfigured" }
@@ -43,6 +53,61 @@ export type WhatsAppResult =
   | { ok: true; messageId?: string }
   | { ok: false; failure: WhatsAppFailure };
 
+/** The base URL with any trailing slashes off, so paths concatenate cleanly. */
+function baseUrl() {
+  return env.OPENWA_BASE_URL!.replace(/\/+$/, "");
+}
+
+function headers() {
+  return {
+    "content-type": "application/json",
+    // OpenWA names the header exactly this. It is an API key, not a bearer token.
+    "X-API-Key": env.OPENWA_API_KEY!,
+  };
+}
+
+/**
+ * Brings a dead session back, and says whether it came back.
+ *
+ * The engine drives a real Chromium against web.whatsapp.com, and that page fails the
+ * way pages do: one DNS lookup misses and the session sits in `failed` until somebody
+ * notices. Nobody notices at 9pm. So a send that finds the session down starts it and
+ * waits, rather than reporting a failure a human would have to go and read.
+ *
+ * The wait is deliberately short. Somebody is standing at a counter, and there is a way
+ * in behind this that does not need WhatsApp at all.
+ */
+async function revive(): Promise<boolean> {
+  try {
+    await fetch(`${baseUrl()}/api/sessions/${env.OPENWA_SESSION_ID}/start`, {
+      method: "POST",
+      headers: headers(),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch {
+    return false;
+  }
+
+  // Starting is asynchronous: the call answers `initializing` and the engine loads after.
+  for (let attempt = 0; attempt < REVIVE_POLLS; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, REVIVE_POLL_MS));
+    try {
+      const response = await fetch(`${baseUrl()}/api/sessions/${env.OPENWA_SESSION_ID}`, {
+        headers: headers(),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      if (!response.ok) continue;
+      const session = (await response.json()) as { status?: string };
+      if (session.status === "ready") return true;
+      // A session wanting a QR scan is not coming back without a person holding a phone.
+      if (session.status === "failed" || session.status === "qr") return false;
+    } catch {
+      // A blip mid-poll is not an answer either way; keep waiting out the budget.
+    }
+  }
+  return false;
+}
+
 /**
  * The chat id WhatsApp wants: the number in full international form with no plus, and
  * `@c.us` for an individual rather than a group.
@@ -54,24 +119,21 @@ function chatIdFor(phoneNumber: string) {
 export async function sendWhatsApp({
   to,
   text,
+  allowRevive = true,
 }: {
   to: string;
   text: string;
+  allowRevive?: boolean;
 }): Promise<WhatsAppResult> {
   if (!openWaConfigured) return { ok: false, failure: { kind: "unconfigured" } };
 
-  const base = env.OPENWA_BASE_URL!.replace(/\/+$/, "");
-  const url = `${base}/api/sessions/${env.OPENWA_SESSION_ID}/messages/send-text`;
+  const url = `${baseUrl()}/api/sessions/${env.OPENWA_SESSION_ID}/messages/send-text`;
 
   let response: Response;
   try {
     response = await fetch(url, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        // OpenWA names the header exactly this. It is an API key, not a bearer token.
-        "X-API-Key": env.OPENWA_API_KEY!,
-      },
+      headers: headers(),
       body: JSON.stringify({ chatId: chatIdFor(to), text }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -102,8 +164,15 @@ export async function sendWhatsApp({
   // reconnecting needs a retry, and a bad key needs a deploy.
   if (response.status === 401 || response.status === 403)
     return { ok: false, failure: { kind: "unauthorized" } };
-  if (response.status === 400) return { ok: false, failure: { kind: "not_started", detail } };
-  if (response.status === 409) return { ok: false, failure: { kind: "not_connected", detail } };
+  // A session that is down, or still connecting, is the one failure worth doing something
+  // about rather than reporting. Once only: `allowRevive` is false on the retry, so a
+  // session that will not come back cannot loop.
+  if (response.status === 400 || response.status === 409) {
+    if (allowRevive && (await revive())) return sendWhatsApp({ to, text, allowRevive: false });
+    return response.status === 400
+      ? { ok: false, failure: { kind: "not_started", detail } }
+      : { ok: false, failure: { kind: "not_connected", detail } };
+  }
   return { ok: false, failure: { kind: "rejected", status: response.status, detail } };
 }
 
