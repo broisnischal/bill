@@ -275,8 +275,15 @@ object Radius {
   /** A field, and any surface nested inside a card. */
   val large = 16.dp
 
-  /** A floating bar whose contents are pills inset by 6dp: 10 + 6 rounds to this. */
-  val bar = 20.dp
+  /**
+   * A floating bar whose contents are pills inset by 6dp.
+   *
+   * The indicator behind the chosen icon is 36dp tall, so its own radius is 18, and it
+   * sits 6dp in from the edge: 18 + 6. Get this wrong and the gap between the two curves
+   * changes as it goes round the corner, which is the thing that makes a nested rounded
+   * shape look off without anybody being able to say why.
+   */
+  val bar = 24.dp
 
   /** A card. */
   val card = 24.dp

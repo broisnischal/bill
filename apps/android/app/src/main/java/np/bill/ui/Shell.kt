@@ -139,9 +139,10 @@ fun Shell(
  * The tabs, as one bar floating over the page.
  *
  * Five separate floating circles read as five loose buttons somebody scattered along the
- * bottom edge; one container reads as a control. Every tab keeps its name — a shopkeeper
- * should not have to learn what five stroke icons mean — and every slot is the same
- * width, so choosing one moves nothing.
+ * bottom edge; one container reads as a control. No labels: five words under five icons
+ * is a second row of type competing with the screen above it, and the icons are the same
+ * five in the same order every time, which is how people navigate this. Every slot is the
+ * same width, so choosing one moves nothing.
  */
 @Composable
 private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (String) -> Unit) {
@@ -178,18 +179,18 @@ private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (
       // Every slot is the same width, whichever one is chosen. The pill used to be sized
       // by the label inside it, so picking a tab re-measured the whole row and every
       // other icon slid sideways under the thumb that had just left one.
-      Column(
+      Box(
         Modifier
           .weight(1f)
-          .clip(RoundedCornerShape(Radius.medium))
-          .clickable { onSelect(tab.route) }
-          .padding(vertical = 5.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+          .height(NavItem)
+          .clip(RoundedCornerShape(Radius.pill))
+          .clickable { onSelect(tab.route) },
+        contentAlignment = Alignment.Center,
       ) {
         Box(
           Modifier
-            .size(width = NavPill, height = NavPillHeight)
-            .clip(pill)
+            .size(width = NavPill, height = NavItem)
+            .clip(RoundedCornerShape(Radius.pill))
             .background(if (active) tokens.ink else Color.Transparent),
           contentAlignment = Alignment.Center,
         ) {
@@ -200,24 +201,13 @@ private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (
           ) {
             Icon(
               tab.icon,
-              contentDescription = null,
+              // The label is gone, so the icon carries the name for a screen reader.
+              contentDescription = stringResource(tab.labelRes),
               tint = if (active) tokens.onInk else MaterialTheme.colorScheme.onSurfaceVariant,
               modifier = Modifier.size(NavIcon),
             )
           }
         }
-        Spacer(Modifier.height(3.dp))
-        Text(
-          stringResource(tab.labelRes),
-          style = MaterialTheme.typography.labelSmall,
-          color = if (active) {
-            MaterialTheme.colorScheme.onSurface
-          } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-          },
-          maxLines = 1,
-          overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
-        )
       }
     }
   }
@@ -232,6 +222,7 @@ data class ShellTab(
 
 /** Tall enough that the card under it has something behind it, short enough to be a hint. */
 private val GradientHeight = 210.dp
-private val NavPill = 46.dp
-private val NavPillHeight = 30.dp
-private val NavIcon = 20.dp
+/** The indicator behind the chosen icon. Its radius plus the bar's padding is Radius.bar. */
+private val NavPill = 52.dp
+private val NavItem = 36.dp
+private val NavIcon = 22.dp
