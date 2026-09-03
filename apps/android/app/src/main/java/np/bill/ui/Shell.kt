@@ -149,11 +149,9 @@ fun Shell(
 private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (String) -> Unit) {
   val tokens = LocalTokens.current
 
-  // Concentric: the pill behind the chosen icon is 28dp tall, so its radius is 14, and
-  // it is inset by 6. A stadium-shaped bar around that read as a lozenge somebody had
-  // dropped the tabs into rather than as the frame holding them.
+  // Concentric: the circle behind the chosen icon is 44dp across, so its radius is 22,
+  // and it sits 6dp in from the edge of the bar. 22 + 6 is Radius.bar.
   val shape = RoundedCornerShape(Radius.bar)
-  val pill = RoundedCornerShape(Radius.pill)
 
   Row(
     Modifier
@@ -178,6 +176,9 @@ private fun FloatingNav(tabs: List<ShellTab>, selectedRoute: String, onSelect: (
         },
       )
       .padding(6.dp),
+    // Spread. Without this the Row defaults to packing every circle against the left
+    // edge, which is what it was doing.
+    horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically,
   ) {
     for (tab in tabs) {
