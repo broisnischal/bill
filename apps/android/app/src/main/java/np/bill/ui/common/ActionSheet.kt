@@ -22,7 +22,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import np.bill.R
 import np.bill.ui.theme.BillIcons
 import np.bill.ui.theme.Radius
 import np.bill.ui.theme.TouchTarget
@@ -157,6 +159,58 @@ fun ChoiceSheet(
             }
           }
         }
+      }
+    }
+  }
+}
+
+/**
+ * Something went wrong, said once and got out of the way.
+ *
+ * This was a tinted strip pushed into the middle of the page, so the page grew a
+ * paragraph the moment a code was refused and everything under it jumped down — on the
+ * one screen where somebody's thumb is already moving toward the next thing. A sheet
+ * costs the layout nothing because it is not in the layout, and it can be as long as the
+ * thing that went wrong needs it to be.
+ *
+ * Only for what a person cannot fix by carrying on typing. A refused code is not this:
+ * that belongs against the boxes it was typed into, where the correction happens.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ErrorSheet(
+  title: String,
+  message: String,
+  onDismiss: () -> Unit,
+  /** An action worth offering instead of only closing, such as sending the code again. */
+  action: Pair<String, () -> Unit>? = null,
+) {
+  ModalBottomSheet(
+    onDismissRequest = onDismiss,
+    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    shape = androidx.compose.foundation.shape.RoundedCornerShape(
+      topStart = Radius.sheet,
+      topEnd = Radius.sheet,
+    ),
+  ) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp)) {
+      IconTile(BillIcons.CircleAlert, tone = TileTone.NEGATIVE)
+      Spacer(Modifier.height(14.dp))
+      Text(title, style = MaterialTheme.typography.headlineSmall)
+      Spacer(Modifier.height(4.dp))
+      Text(
+        message,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+
+      Spacer(Modifier.height(20.dp))
+      if (action != null) {
+        PrimaryButton(text = action.first, onClick = action.second)
+        Spacer(Modifier.height(10.dp))
+        SecondaryButton(text = stringResource(R.string.close), onClick = onDismiss)
+      } else {
+        PrimaryButton(text = stringResource(R.string.close), onClick = onDismiss)
       }
     }
   }

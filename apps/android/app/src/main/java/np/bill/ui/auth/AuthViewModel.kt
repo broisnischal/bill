@@ -22,6 +22,14 @@ data class AuthState(
   val verified: Boolean = false,
   /** True when the code was filled in from a local dev server rather than an SMS. */
   val prefilledFromDevServer: Boolean = false,
+  /**
+   * The code was refused, as opposed to something breaking.
+   *
+   * Held apart from [error] because the two want different answers on screen. A wrong
+   * code is corrected by typing, so it belongs against the boxes; anything else is a
+   * problem the person cannot type their way out of.
+   */
+  val codeRejected: Boolean = false,
 )
 
 @HiltViewModel
@@ -39,7 +47,9 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
   }
 
   fun onCodeChanged(value: String) {
-    _state.update { it.copy(code = value.filter(Char::isDigit).take(6), error = null) }
+    _state.update {
+      it.copy(code = value.filter(Char::isDigit).take(6), error = null, codeRejected = false)
+    }
   }
 
   /**
@@ -83,11 +93,16 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
     }
   }
 
+  /** Dismisses whatever the error sheet is showing, without touching the typed code. */
+  fun clearProblem() {
+    _state.update { it.copy(error = null, offline = false) }
+  }
+
   fun verify(phoneNumber: String, onVerified: () -> Unit) {
     val code = _state.value.code
     if (code.length < 6) return
     viewModelScope.launch {
-      _state.update { it.copy(verifying = true, error = null, offline = false) }
+      _state.update { it.copy(verifying = true, error = null, offline = false, codeRejected = false) }
       when (val result = auth.verifyOtp(phoneNumber, code)) {
         is ApiResult.Ok -> {
           _state.update { it.copy(verifying = false, verified = true) }
@@ -95,8 +110,15 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
         }
         ApiResult.Offline ->
           _state.update { it.copy(verifying = false, offline = true) }
-        is ApiResult.Failed ->
-          _state.update { it.copy(verifying = false, error = result.message) }
+        // The server refusing the code is the ordinary outcome of mistyping one, not a
+        // failure of the app. Any other status is something the person cannot fix here.
+        is ApiResult.Failed -> _state.update {
+          if (result.status in 400..499) {
+            it.copy(verifying = false, codeRejected = true)
+          } else {
+            it.copy(verifying = false, error = result.message)
+          }
+        }
       }
     }
   }
