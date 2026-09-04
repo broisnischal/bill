@@ -203,7 +203,7 @@ fun RegisterBusinessScreen(
               options = (1..35).map(Int::toString),
               onPick = viewModel::onWard,
               label = stringResource(R.string.ward),
-              modifier = Modifier.width(110.dp),
+              modifier = Modifier.width(132.dp),
             )
             Spacer(Modifier.width(12.dp))
             Field(

@@ -315,6 +315,8 @@
     <string name="see_all">See all</string>
 
     <string name="pick_date">Pick a date</string>
+    <string name="pick_month">Pick a month</string>
+    <string name="pick_year">Pick a year</string>
 
     <string name="nav_customers_tab">Buyers</string>
 

@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import np.bill.ui.theme.BillIcons
 import np.bill.R
@@ -69,7 +70,10 @@ fun PickerField(
         value = value.orEmpty(),
         onValueChange = {},
         label = if (showLabel) {
-          { Text(label) }
+          // One line, always. A picker in a narrow column had its label wrap inside the
+          // outline notch — "Wa / rd" — which doubled the box's height and left it
+          // standing taller than the field beside it on the same row.
+          { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         } else {
           null
         },

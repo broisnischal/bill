@@ -118,7 +118,7 @@ fun BusinessSettingsScreen(
         options = Nepal.wards.map(Int::toString),
         onPick = viewModel::onWard,
         label = stringResource(R.string.ward),
-        modifier = Modifier.width(120.dp),
+        modifier = Modifier.width(132.dp),
       )
       Spacer(Modifier.width(12.dp))
       Field(
