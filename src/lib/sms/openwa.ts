@@ -40,9 +40,24 @@ const TIMEOUT_MS = 8000;
 const REVIVE_POLLS = 4;
 const REVIVE_POLL_MS = 3000;
 
+/**
+ * The two things OpenWA answers 400 for, told apart by their message.
+ *
+ * One is a session that is not running and the other is a number the account cannot open
+ * a conversation with, and NestJS gives neither a code of its own, so the body is the
+ * only discriminator there is. Both strings are lifted from the server's own error
+ * classes. If either is reworded, the send falls through to `rejected` and reports the
+ * body verbatim, which is the safe way to be wrong: it says what happened instead of
+ * restarting a session on a guess.
+ */
+const UNREACHABLE_RECIPIENT = "could not resolve the recipient";
+const SESSION_NOT_STARTED = "Session is not started";
+
 /** Why a send did not happen, for a log that has to be readable at a counter. */
 export type WhatsAppFailure =
   | { kind: "unconfigured" }
+  | { kind: "no_such_recipient" }
+  | { kind: "no_session"; name: string }
   | { kind: "not_started"; detail: string }
   | { kind: "not_connected"; detail: string }
   | { kind: "unauthorized" }
@@ -66,6 +81,53 @@ function headers() {
   };
 }
 
+/** The shape OpenWA's session ids come in. Anything else is read as a session name. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Which session to send from, by name if that is what it was given.
+ *
+ * `OPENWA_SESSION_ID` may hold either a uuid or the name of a session. The uuid is what
+ * OpenWA generates — `@PrimaryGeneratedColumn('uuid')` on its session entity — so it is
+ * a value you can only learn after creating the session, on the server that created it.
+ * Rebuild that server, or scan the QR again, and the uuid changes and this stops sending
+ * until somebody remembers to update a secret.
+ *
+ * A name does not have that problem, because a name is something we choose. Pointing this
+ * at `marketing` means the config survives a re-pair and a move to another host, and the
+ * two things that have to agree are a name in a secret and a name in a dashboard.
+ *
+ * Held per isolate rather than per request: the answer only changes when somebody
+ * re-creates the session, which is what `forgetSession` is for.
+ */
+let resolved: string | null = null;
+
+async function sessionId(): Promise<string | null> {
+  const configured = env.OPENWA_SESSION_ID!;
+  if (UUID.test(configured)) return configured;
+  if (resolved) return resolved;
+
+  try {
+    const response = await fetch(`${baseUrl()}/api/sessions`, {
+      headers: headers(),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    const sessions = (await response.json()) as { id?: string; name?: string }[];
+    // Only cache an answer, never the absence of one: a session created a minute from
+    // now should be found without waiting for a new isolate.
+    resolved = sessions.find((session) => session.name === configured)?.id ?? null;
+    return resolved;
+  } catch {
+    return null;
+  }
+}
+
+/** Forgets a resolved id, so a session that was re-created is looked up again. */
+function forgetSession() {
+  resolved = null;
+}
+
 /**
  * Brings a dead session back, and says whether it came back.
  *
@@ -77,9 +139,9 @@ function headers() {
  * The wait is deliberately short. Somebody is standing at a counter, and there is a way
  * in behind this that does not need WhatsApp at all.
  */
-async function revive(): Promise<boolean> {
+async function revive(session: string): Promise<boolean> {
   try {
-    await fetch(`${baseUrl()}/api/sessions/${env.OPENWA_SESSION_ID}/start`, {
+    await fetch(`${baseUrl()}/api/sessions/${session}/start`, {
       method: "POST",
       headers: headers(),
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -92,15 +154,15 @@ async function revive(): Promise<boolean> {
   for (let attempt = 0; attempt < REVIVE_POLLS; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, REVIVE_POLL_MS));
     try {
-      const response = await fetch(`${baseUrl()}/api/sessions/${env.OPENWA_SESSION_ID}`, {
+      const response = await fetch(`${baseUrl()}/api/sessions/${session}`, {
         headers: headers(),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       if (!response.ok) continue;
-      const session = (await response.json()) as { status?: string };
-      if (session.status === "ready") return true;
+      const state = (await response.json()) as { status?: string };
+      if (state.status === "ready") return true;
       // A session wanting a QR scan is not coming back without a person holding a phone.
-      if (session.status === "failed" || session.status === "qr") return false;
+      if (state.status === "failed" || state.status === "qr") return false;
     } catch {
       // A blip mid-poll is not an answer either way; keep waiting out the budget.
     }
@@ -127,7 +189,12 @@ export async function sendWhatsApp({
 }): Promise<WhatsAppResult> {
   if (!openWaConfigured) return { ok: false, failure: { kind: "unconfigured" } };
 
-  const url = `${baseUrl()}/api/sessions/${env.OPENWA_SESSION_ID}/messages/send-text`;
+  const session = await sessionId();
+  if (!session) {
+    return { ok: false, failure: { kind: "no_session", name: env.OPENWA_SESSION_ID! } };
+  }
+
+  const url = `${baseUrl()}/api/sessions/${session}/messages/send-text`;
 
   let response: Response;
   try {
@@ -164,15 +231,34 @@ export async function sendWhatsApp({
   // reconnecting needs a retry, and a bad key needs a deploy.
   if (response.status === 401 || response.status === 403)
     return { ok: false, failure: { kind: "unauthorized" } };
+
+  // A number this account cannot reach. Nothing is wrong with the session, so reviving it
+  // buys nothing and costs plenty: every send to an unknown number restarted a working
+  // session, held the shopkeeper at the counter for the twelve seconds that takes, then
+  // failed identically and reported the session as dead. Every 400 was read that way,
+  // because both answers are 400. Straight to the next channel instead.
+  if (response.status === 400 && detail.includes(UNREACHABLE_RECIPIENT))
+    return { ok: false, failure: { kind: "no_such_recipient" } };
+
   // A session that is down, or still connecting, is the one failure worth doing something
   // about rather than reporting. Once only: `allowRevive` is false on the retry, so a
   // session that will not come back cannot loop.
-  if (response.status === 400 || response.status === 409) {
-    if (allowRevive && (await revive())) return sendWhatsApp({ to, text, allowRevive: false });
-    return response.status === 400
+  const notStarted = response.status === 400 && detail.includes(SESSION_NOT_STARTED);
+  if (notStarted || response.status === 409) {
+    if (allowRevive && (await revive(session)))
+      return sendWhatsApp({ to, text, allowRevive: false });
+    return notStarted
       ? { ok: false, failure: { kind: "not_started", detail } }
       : { ok: false, failure: { kind: "not_connected", detail } };
   }
+  // The session we were sending from is gone: re-created, or renamed out from under us.
+  // Drop the cached id and let one retry resolve it again, which is what makes a re-pair
+  // recover by itself instead of waiting for a deploy.
+  if (response.status === 404 && allowRevive && !UUID.test(env.OPENWA_SESSION_ID!)) {
+    forgetSession();
+    return sendWhatsApp({ to, text, allowRevive: false });
+  }
+
   return { ok: false, failure: { kind: "rejected", status: response.status, detail } };
 }
 
@@ -183,6 +269,10 @@ export function describeFailure(failure: WhatsAppFailure): string {
       return "WhatsApp is not configured (OPENWA_BASE_URL, OPENWA_API_KEY, OPENWA_SESSION_ID)";
     case "unauthorized":
       return "OpenWA refused the API key";
+    case "no_such_recipient":
+      return "that number is not on WhatsApp, or this account has never had a chat with it";
+    case "no_session":
+      return `the OpenWA server has no session called "${failure.name}"`;
     case "not_started":
       return `the WhatsApp session is not running: ${failure.detail}`;
     case "not_connected":
