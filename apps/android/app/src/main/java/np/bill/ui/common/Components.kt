@@ -720,21 +720,24 @@ fun PaymentChip(
 ) {
   val tokens = LocalTokens.current
   val brand = paymentBrand(method)
+  val shape = RoundedCornerShape(Radius.pill)
+  val interaction = remember { MutableInteractionSource() }
 
   Row(
     modifier
-      .clip(RoundedCornerShape(Radius.large))
-      .background(
-        if (selected) brand.tint.copy(alpha = if (tokens.isDark) 0.20f else 0.13f)
-        else MaterialTheme.colorScheme.surfaceContainer,
-      )
-      .border(
-        1.dp,
-        if (selected) brand.tint.copy(alpha = 0.55f) else tokens.border,
-        RoundedCornerShape(Radius.large),
-      )
-      .clickable(onClick = onClick)
-      .padding(horizontal = 10.dp, vertical = 8.dp),
+      // The same pill, fill and press as ChoiceChip, because this is the same question
+      // asked about a different thing. It was a 16dp rounded box next to a row of pills.
+      .pressScale(interaction)
+      .clip(shape)
+      // Ink marks the one you are on. Selecting used to tint the chip with the brand's
+      // own colour, which made choosing Khalti or Fonepay turn it red — the colour this
+      // app reserves for something cancelled — and choosing eSewa turn it green, which
+      // is what it uses for money that has been settled. The mark carries the brand; the
+      // fill only has to say which one is chosen.
+      .background(if (selected) tokens.ink else MaterialTheme.colorScheme.surface)
+      .border(1.dp, if (selected) tokens.ink else tokens.borderStrong, shape)
+      .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+      .padding(start = 8.dp, end = 14.dp, top = 7.dp, bottom = 7.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     /**
@@ -769,11 +772,14 @@ fun PaymentChip(
         )
       }
     }
-    Spacer(Modifier.width(7.dp))
+    Spacer(Modifier.width(8.dp))
     Text(
       brand.label,
-      style = MaterialTheme.typography.labelMedium,
-      color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+      // labelLarge, matching every other chip. At labelMedium these were the smallest
+      // words on a screen read at arm's length across a counter.
+      style = MaterialTheme.typography.labelLarge,
+      color = if (selected) tokens.onInk else MaterialTheme.colorScheme.onSurface,
+      maxLines = 1,
     )
   }
 }

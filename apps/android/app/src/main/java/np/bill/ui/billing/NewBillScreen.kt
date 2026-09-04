@@ -3,6 +3,8 @@ package np.bill.ui.billing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -98,7 +100,7 @@ import np.bill.ui.common.TotalsRow
  * already there when it opens, the customer's name is optional, and the total is on
  * screen the entire time so the shopkeeper can read it out while still typing.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NewBillScreen(
   onDone: (String) -> Unit,
@@ -373,9 +375,13 @@ fun NewBillScreen(
           Spacer(Modifier.height(8.dp))
           Text(stringResource(R.string.payment_method), style = MaterialTheme.typography.labelLarge)
           Spacer(Modifier.height(8.dp))
-          Row(
-            Modifier.horizontalScroll(rememberScrollState()),
+          // Wrapped, not scrolled sideways. Seven methods on a phone meant four on screen
+          // and the fifth sliced through the middle of its own word at the panel edge,
+          // with nothing to say the row moved — so credit and card existed only for
+          // whoever thought to swipe. Two rows shows all of them.
+          FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
           ) {
             for (method in listOf("cash", "esewa", "khalti", "fonepay", "bank", "card", "credit")) {
               PaymentChip(
