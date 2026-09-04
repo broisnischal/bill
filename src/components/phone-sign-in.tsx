@@ -1,8 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { LoaderCircleIcon, SmartphoneIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "#/components/ui/button.tsx";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "#/components/ui/input-otp.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import { Label } from "#/components/ui/label.tsx";
 import { toast } from "#/components/ui/toast.tsx";
@@ -58,6 +65,9 @@ function TabButton({
     </button>
   );
 }
+
+/** What the server sends and what the boxes below expect. Change both or neither. */
+const OTP_LENGTH = 6;
 
 /** The ordinary route: a number, then the six digits that arrive on WhatsApp. */
 function SmsSignIn() {
@@ -126,18 +136,44 @@ function SmsSignIn() {
         verify();
       }}
     >
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="otp">Code sent to {sentTo}</Label>
-        <Input
+      <div className="flex flex-col items-center gap-2.5">
+        <Label htmlFor="otp" className="text-muted-foreground">
+          Code sent to {sentTo}
+        </Label>
+        <InputOTP
           id="otp"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
+          maxLength={OTP_LENGTH}
           value={code}
-          onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
-        />
+          onChange={setCode}
+          // Digits only, so a paste of "code: 123456" lands as 123456 rather than being
+          // refused a character at a time.
+          pattern={REGEXP_ONLY_DIGITS}
+          // Focus moves because the person just pressed Send code and this form replaced
+          // the one they were on, not because a page loaded under them. That is the case
+          // the rule is not aimed at, and the alternative is asking someone holding a
+          // notification in their other hand to tap a box first.
+          // eslint-disable-next-line jsx-a11y/no-autofocus
+          autoFocus
+          // Submitting on the last digit, because that is what a person expects after
+          // reading six numbers off a notification. The button stays for anyone who
+          // pasted, corrected a digit, or is retrying after a wrong code.
+          onComplete={() => verify()}
+          disabled={verifying}
+        >
+          <InputOTPGroup>
+            {[0, 1, 2].map((index) => (
+              <InputOTPSlot key={index} index={index} />
+            ))}
+          </InputOTPGroup>
+          <InputOTPSeparator />
+          <InputOTPGroup>
+            {[3, 4, 5].map((index) => (
+              <InputOTPSlot key={index} index={index} />
+            ))}
+          </InputOTPGroup>
+        </InputOTP>
       </div>
-      <Button type="submit" disabled={code.length < 6 || verifying}>
+      <Button type="submit" disabled={code.length < OTP_LENGTH || verifying}>
         {verifying && <LoaderCircleIcon className="animate-spin" />}
         Verify
       </Button>
