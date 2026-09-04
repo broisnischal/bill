@@ -28,7 +28,7 @@ import {
  */
 
 const approveSchema = z.object({
-  code: z.string().trim().min(4).max(12),
+  code: z.string().trim().min(4).max(8),
   approve: z.boolean().default(true),
 });
 

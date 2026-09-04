@@ -21,14 +21,22 @@ import { webLoginRequest } from "#/lib/db/schema/index.ts";
  */
 
 /**
- * The alphabet the code is drawn from.
+ * The alphabet the code is drawn from, and how much of it.
  *
- * No vowels, so no code can spell a word by accident. No 0/O, 1/I/L, 5/S, 8/B, because
- * this is read off a screen across a counter and typed into a phone, often by someone
- * who is not looking closely.
+ * Digits only, four of them. It used to be six characters of a no-vowel, no-lookalike
+ * alphabet, which is unguessable but is also a thing somebody has to find on a keyboard
+ * one letter at a time while a customer waits. Four digits is read once, remembered, and
+ * typed on the number pad the phone already puts up for it.
+ *
+ * That is 10,000 codes rather than 85 million, and it is only safe because of the two
+ * things below it: a code lives five minutes, and only live codes exist at all — see
+ * `releaseFinished`. Approving still needs a session, so a guess buys an attacker a
+ * stranger's browser signed into the attacker's own account, and nothing of the
+ * stranger's. Worth knowing all the same: at this length the guessing is bounded by the
+ * window and not by the arithmetic.
  */
-const ALPHABET = "23479CDFHJKMNPQRTVWXY";
-const CODE_LENGTH = 6;
+const ALPHABET = "0123456789";
+const CODE_LENGTH = 4;
 
 /** Long enough to walk to the till, short enough that a glimpsed code goes stale. */
 const TTL_MS = 5 * 60 * 1000;
@@ -162,20 +170,30 @@ export async function noteFailedAttempt(code: string) {
 
 /** Marks a code collected, so the same one cannot be redeemed twice. */
 export async function claimWebLogin(pollToken: string) {
+  // Deleted rather than marked claimed, for the same reason as above: a spent code must
+  // not hold one of ten thousand. It is still redeemable exactly once, more strictly than
+  // before — the row a second attempt would need is not there.
   const [claimed] = await db
-    .update(webLoginRequest)
-    .set({ status: "claimed" })
+    .delete(webLoginRequest)
     .where(and(eq(webLoginRequest.pollToken, pollToken), eq(webLoginRequest.status, "approved")))
     .returning({ userId: webLoginRequest.approvedByUserId });
 
   return claimed?.userId ?? null;
 }
 
-/** Codes do not linger. Anything past its window stops being approvable at all. */
+/**
+ * Codes do not linger. Anything past its window stops being approvable at all, and stops
+ * occupying its code.
+ *
+ * The row is deleted rather than marked expired. With six characters the leftovers were
+ * harmless; with four digits there are ten thousand codes in total, and rows kept forever
+ * would fill that space until `beginWebLogin` could not find a free one. Nothing reads a
+ * finished request: a browser polling a token that is gone is told the sign-in expired,
+ * which is what it was going to be told anyway.
+ */
 async function expireStale() {
   await db
-    .update(webLoginRequest)
-    .set({ status: "expired" })
+    .delete(webLoginRequest)
     .where(
       and(
         lt(webLoginRequest.expiresAt, new Date()),
@@ -184,12 +202,13 @@ async function expireStale() {
     );
 }
 
-/** What someone typed, in the alphabet the code was drawn from. */
+/**
+ * What someone typed, in the alphabet the code was drawn from.
+ *
+ * Everything that is not a digit goes: a space, a dash, or the letter somebody's
+ * keyboard offered instead of the number. The old mapping of O to 0 and I to 1 was for
+ * an alphabet that had letters in it and there are none left to confuse.
+ */
 export function normalise(code: string) {
-  return code
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .replace(/O/g, "0")
-    .replace(/[IL]/g, "1")
-    .slice(0, CODE_LENGTH);
+  return code.replace(/\D/g, "").slice(0, CODE_LENGTH);
 }
