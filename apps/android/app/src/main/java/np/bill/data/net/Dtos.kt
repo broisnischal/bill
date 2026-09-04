@@ -243,7 +243,18 @@ data class SyncResponse(
   val leases: List<LeaseDto> = emptyList(),
   val catalog: CatalogDto = CatalogDto(),
   val store: StoreDto? = null,
+  /**
+   * Where review has got to, which is what decides whether numbers were sent.
+   *
+   * The server has always returned this and the app has always thrown it away, so a till
+   * whose business was still being reviewed knew only that it had no numbers and guessed
+   * at why — out loud, to a shopkeeper, in the form of advice about their internet.
+   */
+  val review: SyncReviewDto? = null,
 )
+
+@Serializable
+data class SyncReviewDto(val status: String, val note: String? = null)
 
 @Serializable
 data class InvoiceResultDto(

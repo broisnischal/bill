@@ -527,6 +527,11 @@ class BillingViewModel @Inject constructor(
       val outcome = sync.sync()
       _numbersHint.value = when {
         outcome.offline -> NumbersHint.OFFLINE
+        // The sync now says so outright. It used to be inferred from an error, and a
+        // store under review does not produce one: the call succeeds and simply returns
+        // no leases, so this landed on FETCHING and the counter waited for numbers that
+        // were never coming.
+        outcome.underReview -> NumbersHint.REFUSED
         outcome.error != null -> NumbersHint.REFUSED
         else -> NumbersHint.FETCHING
       }
@@ -592,10 +597,21 @@ class BillingViewModel @Inject constructor(
             BillingRepository.Failure.ZeroTotal -> application.getString(np.bill.R.string.error_zero_total)
             BillingRepository.Failure.AbbreviatedLimit ->
               application.getString(np.bill.R.string.error_abbreviated_limit)
-            BillingRepository.Failure.OutOfNumbers ->
-              application.getString(np.bill.R.string.out_of_numbers)
+            // Which of the three it is, rather than always the connection. Telling a
+            // shopkeeper who is online to connect to the internet sends them to toggle
+            // wifi over and over for something no amount of signal will fix.
+            BillingRepository.Failure.OutOfNumbers -> application.getString(
+              when (_numbersHint.value) {
+                NumbersHint.OFFLINE -> np.bill.R.string.out_of_numbers
+                NumbersHint.REFUSED -> np.bill.R.string.numbers_refused
+                NumbersHint.FETCHING -> np.bill.R.string.numbers_fetching
+              },
+            )
           }
           _newBill.update { it.copy(saving = false, error = message) }
+          // Ask now, so the banner resolves to the real reason instead of sitting on
+          // whatever the last sync happened to leave behind.
+          if (result.reason == BillingRepository.Failure.OutOfNumbers) fetchNumbers()
         }
       }
     }

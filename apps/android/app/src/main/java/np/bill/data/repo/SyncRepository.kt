@@ -51,6 +51,14 @@ class SyncRepository @Inject constructor(
     val numbersLeft: Int = 0,
     val offline: Boolean = false,
     val error: String? = null,
+    /**
+     * The business is still being looked at, which is why no numbers came back.
+     *
+     * Carried so the counter can say that instead of guessing. `sync.ts` only issues
+     * number leases to an approved store, so "no numbers" and "under review" are the
+     * same fact seen from two ends.
+     */
+    val underReview: Boolean = false,
   )
 
   suspend fun sync(): Outcome {
@@ -147,6 +155,7 @@ class SyncRepository @Inject constructor(
           filed = filed,
           rejected = rejected,
           numbersLeft = body.leases.sumOf { it.endSequence - maxOf(it.usedThrough, it.startSequence - 1) },
+          underReview = body.review?.status?.let { it != "approved" } == true,
         )
       }
     }
