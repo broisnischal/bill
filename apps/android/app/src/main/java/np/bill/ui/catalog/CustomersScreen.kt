@@ -351,9 +351,29 @@ private fun ContactImportSheet(viewModel: CatalogViewModel, onDismiss: () -> Uni
     )
 
     // A shop importing its address book wants all of it, not forty taps.
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    //
+    // Counted against distinct numbers, because `picked` is keyed by phone: two contacts
+    // sharing one number are a single entry in it, so `picked.size == contacts.size`
+    // could never come true on a real address book. The box stayed unchecked however many
+    // rows were ticked, and since tapping it only ever ran the "select" branch, there was
+    // no way to clear the selection either.
+    val distinct = remember(contacts) { contacts.distinctBy { it.phone }.size }
+    val allPicked = distinct > 0 && picked.size == distinct
+
+    Row(
+      Modifier
+        .fillMaxWidth()
+        // The whole row, not the box. It sits above a list of a hundred and forty and is
+        // the one control that saves someone from scrolling all of it.
+        .clickable {
+          picked.clear()
+          if (!allPicked) contacts.forEach { picked[it.phone] = it }
+        }
+        .padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
       Checkbox(
-        checked = picked.size == contacts.size && contacts.isNotEmpty(),
+        checked = allPicked,
         onCheckedChange = { checked ->
           picked.clear()
           if (checked) contacts.forEach { picked[it.phone] = it }
@@ -365,7 +385,7 @@ private fun ContactImportSheet(viewModel: CatalogViewModel, onDismiss: () -> Uni
         modifier = Modifier.weight(1f),
       )
       Text(
-        "${picked.size} / ${contacts.size}",
+        "${picked.size} / $distinct",
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )

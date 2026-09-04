@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,6 +65,7 @@ import np.bill.ui.theme.Radius
  * it is not repeated here as a grid of equal-weight tiles competing with the one action
  * that matters.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
   miti: String,
@@ -170,6 +173,51 @@ fun HomeScreen(
             BillIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+      }
+    }
+
+    // The shop's saved baskets.
+    //
+    // This section went missing at some point and took the feature with it: `templates`,
+    // `onQuickBill` and the remove sheet were all still wired up here, but nothing drew
+    // the row, so nothing ever set `removing` and `onQuickBill` was never called. A shop
+    // could save a template from a bill, be told it was on the home screen, and never see
+    // it again. The strings for both states were already in strings.xml, waiting.
+    //
+    // Directly under New bill, because that is what these are: the same thing, faster.
+    Spacer(Modifier.height(20.dp))
+    Text(
+      stringResource(R.string.quick_bill),
+      style = MaterialTheme.typography.headlineSmall,
+    )
+    Spacer(Modifier.height(10.dp))
+
+    if (templates.isEmpty()) {
+      Panel {
+        Text(
+          stringResource(R.string.quick_bill_empty),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.fillMaxWidth().padding(24.dp),
+        )
+      }
+    } else {
+      // Wrapped, not scrolled: a shop with five baskets should see five, not three and a
+      // half with the rest behind a gesture nobody knows is there.
+      FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        for (saved in templates) {
+          TemplateChip(
+            name = saved.template.name,
+            lines = saved.lines.size,
+            onClick = { onQuickBill(saved.template.id) },
+            // Held, not swiped. The sheet above says why: this is where a thumb rests.
+            onLongClick = { removing = saved.template.id to saved.template.name },
           )
         }
       }
