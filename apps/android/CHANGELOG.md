@@ -1,5 +1,14 @@
 # @bill/android
 
+## 1.2.1
+
+### Patch Changes
+
+- Products and customers you add on the phone now reach the server. They never did: the till sent them one at a time and the server turned every one away, so they sat waiting and were sent again on the next sync, forever. Importing contacts is also one upload instead of one per person.
+  Saved baskets are back on the home screen. Saving a bill as a template said it would show up there and then it did not.
+  Picking a date no longer means tapping through a month at a time. The month and the year are both buttons, and the year can be typed into.
+  Select all works on the contacts import, and the Ward box fits the word Ward.
+
 ## 1.2.0
 
 ### Minor Changes

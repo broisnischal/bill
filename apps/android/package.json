@@ -1,6 +1,6 @@
 {
   "name": "@bill/android",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "The Android till app. Versioned with changesets; scripts/sync-android-version.mjs turns the version here into release.json."
 }
