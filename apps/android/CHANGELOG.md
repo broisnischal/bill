@@ -1,5 +1,13 @@
 # @bill/android
 
+## 1.2.0
+
+### Minor Changes
+
+- Signing in is easier to read: the code goes in six boxes, the number pad comes up on its own, and a code that does not work says so against the boxes instead of pushing the buttons below it down the screen.
+  Sending your papers works. Upload asks for a photo or a PDF, and a photo goes through a crop screen with a Done button, so a certificate photographed on a counter can be straightened and trimmed first.
+  The printer panel asks for Bluetooth by name, and a business still being checked is told that, rather than told to connect to an internet it is already on.
+
 ## 1.1.1
 
 ### Patch Changes

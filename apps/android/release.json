@@ -1,7 +1,7 @@
 {
-  "versionName": "1.1.1",
-  "versionCode": 3,
+  "versionName": "1.2.0",
+  "versionCode": 4,
   "minimumVersionCode": 1,
-  "apkUrl": "https://github.com/broisnischal/bill/releases/download/android-v1.1.1/bill-1.1.1.apk",
-  "notes": "The sign-in says the code comes on WhatsApp, because it does now. When the\nWhatsApp message does not go out, the screen says that rather than blaming an\nSMS that was never going to be sent."
+  "apkUrl": "https://github.com/broisnischal/bill/releases/download/android-v1.2.0/bill-1.2.0.apk",
+  "notes": "Signing in is easier to read: the code goes in six boxes, the number pad comes up on its own, and a code that does not work says so against the boxes instead of pushing the buttons below it down the screen.\nSending your papers works. Upload asks for a photo or a PDF, and a photo goes through a crop screen with a Done button, so a certificate photographed on a counter can be straightened and trimmed first.\nThe printer panel asks for Bluetooth by name, and a business still being checked is told that, rather than told to connect to an internet it is already on."
 }
