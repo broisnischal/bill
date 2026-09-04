@@ -12,6 +12,7 @@ import np.bill.data.db.LeaseDao
 import np.bill.data.db.LeaseEntity
 import np.bill.data.db.SyncState
 import np.bill.data.db.tagList
+import np.bill.data.net.CatalogPushDto
 import np.bill.data.net.ApiResult
 import np.bill.data.net.BillApi
 import np.bill.data.net.CancellationDto
@@ -73,9 +74,11 @@ class SyncRepository @Inject constructor(
       }
     }
 
-    // Products and buyers created on the till go first: a bill can reference one, and the
-    // server has to know the id before it sees a line pointing at it.
-    pushCatalog()
+    // Products and buyers created on the till ride along in the request below rather than
+    // going one call at a time ahead of it. The server still handles them before the
+    // invoices, which is the ordering a bill referencing a new product needed.
+    val pendingItems = catalog.pendingItems()
+    val pendingCustomers = catalog.pendingCustomers()
 
     val pending = bills.pending()
     val cancellations = bills.pendingCancellations()
@@ -104,6 +107,14 @@ class SyncRepository @Inject constructor(
       // Ask for enough numbers that a day's billing survives a day without signal.
       want = mapOf("tax_invoice" to 60, "abbreviated_tax_invoice" to 20),
       catalogSince = current.catalogCursor,
+      catalog = if (pendingItems.isEmpty() && pendingCustomers.isEmpty()) {
+        null
+      } else {
+        CatalogPushDto(
+          items = pendingItems.map(::toItemUpsert),
+          customers = pendingCustomers.map(::toCustomerUpsert),
+        )
+      },
     )
 
     return when (val response = apiCall { api.sync(request) }) {
@@ -126,6 +137,18 @@ class SyncRepository @Inject constructor(
             }
             // "failed" is transient; the bill stays pending and goes again next time.
             else -> bills.markSync(result.id, SyncState.PENDING, result.error?.message, null)
+          }
+        }
+
+        for (entry in body.catalogResults) {
+          if (entry.status != "saved") continue
+          // `savedId` is where it actually landed. A product merged into one this store
+          // already sells comes back under that row's id, and the till moves onto it —
+          // otherwise it pushes the same product on every sync for the rest of time.
+          val savedId = entry.savedId ?: entry.id
+          when (entry.kind) {
+            "item" -> catalog.confirmItem(entry.id, savedId)
+            "customer" -> catalog.confirmCustomer(entry.id, savedId)
           }
         }
 
@@ -161,45 +184,29 @@ class SyncRepository @Inject constructor(
     }
   }
 
-  /**
-   * Uploads products and buyers added on this device. Each carries the id it was written
-   * with, so the server files it under the same one and a repeat push changes nothing.
-   */
-  private suspend fun pushCatalog() {
-    for (item in catalog.pendingItems()) {
-      val upsert = ItemUpsert(
-        id = item.id,
-        name = item.name,
-        description = item.description,
-        hsCode = item.hsCode,
-        sku = item.sku,
-        barcode = item.barcode,
-        unit = item.unit,
-        unitPricePaisa = item.unitPricePaisa,
-        stockThousandths = item.stockThousandths,
-        tags = item.tagList,
-        vatApplicable = item.vatApplicable,
-        active = item.active,
-      )
-      val body = CatalogUpsertRequest("item", json.encodeToJsonElement(ItemUpsert.serializer(), upsert))
-      if (apiCall { api.upsertCatalog(body) } is ApiResult.Ok) catalog.confirmItem(item.id, item.id)
-    }
+  private fun toItemUpsert(item: np.bill.data.db.ItemEntity) = ItemUpsert(
+    id = item.id,
+    name = item.name,
+    description = item.description,
+    hsCode = item.hsCode,
+    sku = item.sku,
+    barcode = item.barcode,
+    unit = item.unit,
+    unitPricePaisa = item.unitPricePaisa,
+    stockThousandths = item.stockThousandths,
+    tags = item.tagList,
+    vatApplicable = item.vatApplicable,
+    active = item.active,
+  )
 
-    for (customer in catalog.pendingCustomers()) {
-      val upsert = CustomerUpsert(
-        id = customer.id,
-        name = customer.name,
-        pan = customer.pan,
-        address = customer.address,
-        phone = customer.phone,
-        email = customer.email,
-      )
-      val body = CatalogUpsertRequest("customer", json.encodeToJsonElement(CustomerUpsert.serializer(), upsert))
-      if (apiCall { api.upsertCatalog(body) } is ApiResult.Ok) {
-        catalog.confirmCustomer(customer.id, customer.id)
-      }
-    }
-  }
+  private fun toCustomerUpsert(customer: np.bill.data.db.CustomerEntity) = CustomerUpsert(
+    id = customer.id,
+    name = customer.name,
+    pan = customer.pan,
+    address = customer.address,
+    phone = customer.phone,
+    email = customer.email,
+  )
 
   private suspend fun registerDevice(): ApiResult<*> {
     val deviceId = session.deviceId()

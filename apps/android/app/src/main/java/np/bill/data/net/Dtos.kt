@@ -230,6 +230,37 @@ data class SyncRequest(
   val payments: List<PaymentDto> = emptyList(),
   val want: Map<String, Int>? = null,
   val catalogSince: String? = null,
+  /**
+   * Products and buyers created here, pushed with everything else.
+   *
+   * One call per record to /api/v1/catalog was a round trip each on a shop's connection,
+   * and it ran before the sync request was even built, so no bill was filed until the
+   * last contact came back. An address book of a hundred and forty was minutes of that.
+   */
+  val catalog: CatalogPushDto? = null,
+)
+
+@Serializable
+data class CatalogPushDto(
+  val items: List<ItemUpsert> = emptyList(),
+  val customers: List<CustomerUpsert> = emptyList(),
+)
+
+/**
+ * What became of one pushed record.
+ *
+ * `id` is the id the server saved it under, which is not always the one sent: a product
+ * whose name the store already sells is merged into the row that already exists.
+ */
+@Serializable
+data class CatalogResultDto(
+  val kind: String,
+  /** The id this device sent. */
+  val id: String,
+  /** The id the server saved it under, when that differs. */
+  val savedId: String? = null,
+  val status: String,
+  val message: String? = null,
 )
 
 @Serializable
@@ -242,6 +273,7 @@ data class SyncResponse(
   val payments: List<PaymentResultDto> = emptyList(),
   val leases: List<LeaseDto> = emptyList(),
   val catalog: CatalogDto = CatalogDto(),
+  val catalogResults: List<CatalogResultDto> = emptyList(),
   val store: StoreDto? = null,
   /**
    * Where review has got to, which is what decides whether numbers were sent.

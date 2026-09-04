@@ -15,6 +15,8 @@ import {
   recordPayment,
 } from "#/lib/invoice/service.ts";
 import { fiscalYearFor, toBsString } from "#/lib/nepali/date.ts";
+import { upsertCustomer, upsertItem } from "#/lib/store/catalog.ts";
+import { customerSchema, itemSchema } from "#/lib/store/schema.ts";
 
 /**
  * The whole of sync, in one request.
@@ -46,6 +48,22 @@ const syncRequestSchema = z.object({
   want: z.partialRecord(z.enum(invoiceTypes), z.int().min(0).max(500)).optional(),
   /** Catalogue cursor: send back what changed after this. Omit for a full pull. */
   catalogSince: z.iso.datetime().optional(),
+  /**
+   * Products and buyers created on the till, pushed with everything else.
+   *
+   * These used to go one at a time to `/api/v1/catalog` before the sync request was even
+   * built: a shop importing its address book made one HTTP call per contact, each
+   * re-resolving the session and each paying a round trip on a phone connection, and no
+   * bill was filed until the last of them came back. A hundred and forty contacts was
+   * minutes of that. They ride along here now, ahead of the invoices in the same handler,
+   * which is the ordering a bill referencing a new product needed anyway.
+   */
+  catalog: z
+    .object({
+      items: z.array(itemSchema).max(500).default([]),
+      customers: z.array(customerSchema).max(500).default([]),
+    })
+    .optional(),
 });
 
 /** Which of the three kinds of failure this was. */
@@ -80,7 +98,68 @@ export const Route = createFileRoute("/api/v1/sync")({
                 "The business was not approved. Send what was asked for again.")
               : "The business is still being reviewed. Billing opens once it is approved.";
 
-          // Bills first: a cancellation in the same batch may be aimed at one of them.
+          /**
+           * The catalogue first, because a bill in this same batch can have a line
+           * pointing at a product created on the till moments ago.
+           *
+           * One failure does not sink the rest: each row reports its own outcome and the
+           * device keeps the ones it could not push for the next sync. A store under
+           * review still gets this, the same way it still gets the catalogue pull — it is
+           * setting up its products while it waits.
+           */
+          const catalogResults: {
+            kind: "item" | "customer";
+            /** The id the till sent, so it knows which of its rows this is about. */
+            id: string;
+            /**
+             * The id it was saved under. Not always the one sent: a product whose name
+             * this store already sells is merged into the row that already exists, and
+             * the till has to move its own row onto that id or push a duplicate forever.
+             */
+            savedId?: string;
+            status: "saved" | "failed";
+            message?: string;
+          }[] = [];
+
+          for (const value of body.catalog?.items ?? []) {
+            try {
+              const saved = await upsertItem({ storeId: context.store.id, value });
+              catalogResults.push({
+                kind: "item",
+                id: value.id ?? saved.id,
+                savedId: saved.id,
+                status: "saved",
+              });
+            } catch (error) {
+              catalogResults.push({
+                kind: "item",
+                id: value.id ?? value.name,
+                status: "failed",
+                message: error instanceof Error ? error.message : "Could not save this product",
+              });
+            }
+          }
+
+          for (const value of body.catalog?.customers ?? []) {
+            try {
+              const saved = await upsertCustomer({ storeId: context.store.id, value });
+              catalogResults.push({
+                kind: "customer",
+                id: value.id ?? saved.id,
+                savedId: saved.id,
+                status: "saved",
+              });
+            } catch (error) {
+              catalogResults.push({
+                kind: "customer",
+                id: value.id ?? value.name,
+                status: "failed",
+                message: error instanceof Error ? error.message : "Could not save this buyer",
+              });
+            }
+          }
+
+          // Bills next: a cancellation in the same batch may be aimed at one of them.
           const results = [];
           for (const input of body.invoices) {
             if (!approved) {
@@ -215,6 +294,7 @@ export const Route = createFileRoute("/api/v1/sync")({
             fiscalYear,
             miti: toBsString(now),
             results,
+            catalogResults,
             cancellations,
             leases,
             catalog: { items, customers },
