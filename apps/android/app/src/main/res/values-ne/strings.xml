@@ -15,6 +15,10 @@
     <string name="verify">पुष्टि गर्नुहोस्</string>
     <string name="resend_code">फेरि पठाउनुहोस्</string>
     <string name="change_number">नम्बर फेर्नुहोस्</string>
+    <string name="otp_wrong">यो कोड मिलेन। हेरेर फेरि हाल्नुहोस्।</string>
+    <string name="error_title">भएन</string>
+    <string name="error_offline_title">इन्टरनेट छैन</string>
+    <string name="close">बन्द गर्नुहोस्</string>
 
     <string name="mode_title">बिल कसरी चलाउनुहुन्छ?</string>
     <string name="mode_business">मेरो व्यवसाय छ</string>
@@ -111,6 +115,8 @@
     <string name="printer">थर्मल प्रिन्टर</string>
     <string name="printer_none">प्रिन्टर छानिएको छैन</string>
     <string name="printer_pair_hint">एन्ड्रोइड ब्लुटुथ सेटिङमा प्रिन्टर पेयर गरेर यहाँ छान्नुहोस्।</string>
+    <string name="printer_permission">ब्लुटुथ अनुमति दिनुहोस्</string>
+    <string name="printer_permission_hint">यो फोनमा पेयर भएका प्रिन्टर देख्न Bill लाई ब्लुटुथ चाहिन्छ।</string>
     <string name="sync_now">अहिले सिंक गर्नुहोस्</string>
     <string name="sign_out">साइन आउट</string>
     <string name="items">सामानहरू</string>
@@ -294,6 +300,11 @@
     <string name="doc_optional">वैकल्पिक, तर जाँच छिटो हुन्छ।</string>
     <string name="doc_upload">पठाउनुहोस्</string>
     <string name="doc_replace">बदल्नुहोस्</string>
+    <string name="doc_source_photo">फोटो खिच्नुहोस् वा छान्नुहोस्</string>
+    <string name="doc_source_pdf">PDF छान्नुहोस्</string>
+    <string name="doc_source_hint">पाना सिधा पारेर वरिपरिको भाग काट्नुहोस्। कसैले त्यसबाट अंक पढ्नुपर्छ।</string>
+    <string name="crop_title">पाना काट्नुहोस्</string>
+    <string name="crop_done">भयो</string>
 
     <string name="mode_subtitle">पछि सेटिङमा बदल्न सकिन्छ।</string>
 

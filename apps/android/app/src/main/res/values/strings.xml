@@ -16,6 +16,10 @@
     <string name="verify">Verify</string>
     <string name="resend_code">Send it again</string>
     <string name="change_number">Change number</string>
+    <string name="otp_wrong">That code did not work. Check it and try again.</string>
+    <string name="error_title">That did not work</string>
+    <string name="error_offline_title">No connection</string>
+    <string name="close">Close</string>
 
     <!-- Mode -->
     <string name="mode_title">How will you use Bill?</string>
@@ -119,6 +123,8 @@
     <string name="printer">Thermal printer</string>
     <string name="printer_none">No printer chosen</string>
     <string name="printer_pair_hint">Pair the printer in Android Bluetooth settings, then pick it here.</string>
+    <string name="printer_permission">Allow Bluetooth</string>
+    <string name="printer_permission_hint">Bill needs Bluetooth to see the printers paired to this phone.</string>
     <string name="sync_now">Sync now</string>
     <string name="sign_out">Sign out</string>
     <string name="items">Items</string>
@@ -341,6 +347,11 @@
     <string name="doc_optional">Optional, but it speeds the check up.</string>
     <string name="doc_upload">Upload</string>
     <string name="doc_replace">Replace</string>
+    <string name="doc_source_photo">Take or choose a photo</string>
+    <string name="doc_source_pdf">Choose a PDF</string>
+    <string name="doc_source_hint">Straighten the page and crop the counter out. Someone has to read the numbers off it.</string>
+    <string name="crop_title">Crop the page</string>
+    <string name="crop_done">Done</string>
 
     <string name="mode_subtitle">You can change this later in settings.</string>
 
