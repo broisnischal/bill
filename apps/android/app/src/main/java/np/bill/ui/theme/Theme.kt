@@ -1,7 +1,10 @@
 package np.bill.ui.theme
 
 import android.app.Activity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -10,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
@@ -355,6 +359,19 @@ fun BillTheme(
   }
 
   CompositionLocalProvider(LocalTokens provides tokens) {
-    MaterialTheme(colorScheme = colors, typography = BillTypography, content = content)
+    MaterialTheme(colorScheme = colors, typography = BillTypography) {
+      /**
+       * The page, painted once, under everything.
+       *
+       * Every screen inside the tab shell drew its own ground and every screen before it
+       * — sign in, the code, the mode picker, registration, the papers screen — drew
+       * none, so those fell through to the window background in `colors.xml`. That is a
+       * different colour, and it does not know about the theme chosen in settings: a
+       * shopkeeper who picked Dark on a phone set to Light got dark cards sitting on a
+       * pale page. Painting it here means no screen can forget, and the choice made in
+       * settings reaches all of them.
+       */
+      Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
+    }
   }
 }

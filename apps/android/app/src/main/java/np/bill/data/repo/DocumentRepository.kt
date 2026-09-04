@@ -3,6 +3,7 @@ package np.bill.data.repo
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.webkit.MimeTypeMap
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,7 +39,14 @@ class DocumentRepository @Inject constructor(
   suspend fun upload(kind: String, uri: Uri): ApiResult<StoreDocumentDto> =
     withContext(Dispatchers.IO) {
       val resolver = context.contentResolver
-      val mimeType = resolver.getType(uri) ?: "application/octet-stream"
+      // The cropper hands back a file it wrote itself, and a provider that was not asked
+      // to declare a type answers null. Falling back to the extension keeps a cropped
+      // photograph from being refused as an unreadable file the shop never chose.
+      val mimeType = resolver.getType(uri)
+        ?: MimeTypeMap.getFileExtensionFromUrl(uri.toString())
+          ?.lowercase()
+          ?.let { MimeTypeMap.getSingleton().getMimeTypeFromExtension(it) }
+        ?: "application/octet-stream"
 
       if (mimeType !in allowedTypes) {
         return@withContext ApiResult.Failed(

@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0F5B57</color>
-    <color name="window_background">#FBFBF7</color>
+    <!--
+      Only the frame before Compose paints, so it has to be the colour Compose then
+      paints: this was a warm #FBFBF7 against a neutral #F4F4F4 page, which read as a
+      tint change every cold start. Matches LightBackground in Theme.kt.
+    -->
+    <color name="window_background">#F4F4F4</color>
+    <!-- Grey1 in Theme.kt, the app's ink. Fixed in both modes: see Theme.Bill.Crop. -->
+    <color name="crop_chrome">#0E0E0E</color>
 </resources>

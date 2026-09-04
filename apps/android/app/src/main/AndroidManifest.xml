@@ -73,6 +73,15 @@
             </intent-filter>
         </activity>
 
+        <!-- The cropper ships its activity with no theme of its own, so it inherited
+             Theme.Bill and came up with no action bar and therefore no Crop button. This
+             gives it one. Not exported: it is only ever started from inside the app. -->
+        <activity
+            android:name="com.canhub.cropper.CropImageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bill.Crop"
+            tools:replace="android:exported" />
+
         <!-- Sharing a generated PDF hands out a content URI, never a file path. -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -10,4 +10,23 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/window_background</item>
     </style>
+
+    <!--
+      The crop screen, and the only screen in the app that keeps an action bar.
+
+      Rotate, flip and Crop are options-menu items in the cropper library, and the
+      library's own manifest entry declares no theme, so the activity inherited
+      Theme.Bill above. That is NoActionBar: the crop screen came up as a photograph
+      with a grid over it and no way at all to accept it.
+
+      Dark chrome regardless of the system, because this is the one place a photograph
+      is the whole screen and a pale bar around it fights the picture.
+    -->
+    <style name="Theme.Bill.Crop" parent="Theme.AppCompat">
+        <item name="colorPrimary">@color/crop_chrome</item>
+        <item name="colorPrimaryDark">@color/crop_chrome</item>
+        <item name="android:statusBarColor">@color/crop_chrome</item>
+        <item name="android:navigationBarColor">@color/crop_chrome</item>
+        <item name="android:windowBackground">@color/crop_chrome</item>
+    </style>
 </resources>

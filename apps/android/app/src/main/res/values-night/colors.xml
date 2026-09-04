@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="window_background">#11140F</color>
+    <!-- DarkBackground in Theme.kt. The old value carried a green cast the app has nowhere else. -->
+    <color name="window_background">#0E0E0E</color>
 </resources>
