@@ -33,14 +33,17 @@ export const env = createEnv({
       .transform((value) => value === "true"),
     /**
      * WhatsApp, through an OpenWA server, which is the channel a code actually goes out
-     * on. All three are needed before anything is sent.
+     * on. The URL and the key are what it needs; the session is a preference.
      *
-     * The base URL is a Cloudflare tunnel to somebody's own machine rather than a
-     * gateway with an SLA, so treat a failure to send as normal and not exceptional:
-     * see src/lib/sms/openwa.ts.
+     * What is on the other end is one or more linked WhatsApp accounts, not a gateway
+     * with an SLA, so treat a failure to send as normal rather than exceptional. WhatsApp
+     * itself is the least reliable part: it will unlink a device and it will restrict an
+     * account for messaging people who have not messaged it, which is exactly what a
+     * verification code does. See src/lib/sms/openwa.ts.
      */
     OPENWA_BASE_URL: z.string().optional(),
     OPENWA_API_KEY: z.string().optional(),
+    /** Which linked account to prefer. Optional: any account that can send will do. */
     OPENWA_SESSION_ID: z.string().optional(),
 
     /**

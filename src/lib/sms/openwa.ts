@@ -16,10 +16,17 @@ import { env } from "#/env/server.ts";
  * `sendWhatsApp` reports why it failed instead of just that it did.
  */
 
-/** Configured when there is somewhere to send, a key to send with, and a session to send from. */
-export const openWaConfigured = Boolean(
-  env.OPENWA_BASE_URL && env.OPENWA_API_KEY && env.OPENWA_SESSION_ID,
-);
+/**
+ * Configured when there is somewhere to send and a key to send with.
+ *
+ * `OPENWA_SESSION_ID` is deliberately not required. It used to be, and that made the
+ * channel depend on a name somebody could delete: a session removed and recreated under
+ * another name left the config pointing at nothing and no code went out, even though a
+ * healthy linked account was sitting right there. It is a preference now, not a
+ * prerequisite — name a session to be sent from first, or name none and let any account
+ * that can send do it.
+ */
+export const openWaConfigured = Boolean(env.OPENWA_BASE_URL && env.OPENWA_API_KEY);
 
 /**
  * How long to wait on the tunnel.
@@ -68,7 +75,7 @@ const SESSION_DOWN = ["Session is not started", "is not active. Start the sessio
 export type WhatsAppFailure =
   | { kind: "unconfigured" }
   | { kind: "no_such_recipient" }
-  | { kind: "no_session"; name: string }
+  | { kind: "no_session"; name?: string }
   | { kind: "not_delivered" }
   | { kind: "restricted"; code: string; until?: string }
   | { kind: "not_started"; detail: string }
@@ -165,7 +172,8 @@ async function allSessions(): Promise<SessionState[] | null> {
 
 /** Whether this is the session the config names, by uuid or by name. */
 function isConfigured(session: SessionState) {
-  const configured = env.OPENWA_SESSION_ID!;
+  const configured = env.OPENWA_SESSION_ID;
+  if (!configured) return false;
   return UUID.test(configured) ? session.id === configured : session.name === configured;
 }
 
@@ -190,9 +198,10 @@ async function sendableSessions(): Promise<SessionState[] | null> {
 
   if (usable.length > 0) return usable;
 
-  // Nothing is ready. Fall back to the configured session so the revive path below still
-  // has something to start — a session that is merely asleep is the case that recovers.
-  const fallback = sessions.find(isConfigured);
+  // Nothing is ready. Fall back to the preferred session, or to whatever exists, so the
+  // revive path below still has something to start — a session that is merely asleep is
+  // the case that recovers on its own.
+  const fallback = sessions.find(isConfigured) ?? sessions[0];
   return fallback ? [fallback] : [];
 }
 
@@ -406,10 +415,10 @@ export async function sendWhatsApp({
     };
   }
   if (candidates.length === 0) {
-    return { ok: false, failure: { kind: "no_session", name: env.OPENWA_SESSION_ID! } };
+    return { ok: false, failure: { kind: "no_session", name: env.OPENWA_SESSION_ID } };
   }
 
-  let last: WhatsAppFailure = { kind: "no_session", name: env.OPENWA_SESSION_ID! };
+  let last: WhatsAppFailure = { kind: "no_session", name: env.OPENWA_SESSION_ID };
 
   for (const candidate of candidates) {
     const result = await attemptSend({ session: candidate.id, to, text });
@@ -432,7 +441,9 @@ export function describeFailure(failure: WhatsAppFailure): string {
     case "no_such_recipient":
       return "that number is not on WhatsApp, or this account has never had a chat with it";
     case "no_session":
-      return `the OpenWA server has no session called "${failure.name}"`;
+      return failure.name
+        ? `the OpenWA server has no session called "${failure.name}"`
+        : "the OpenWA server has no linked WhatsApp account to send from";
     case "not_delivered":
       return "OpenWA accepted the send but gave no message id, so WhatsApp did not take it";
     case "restricted":
